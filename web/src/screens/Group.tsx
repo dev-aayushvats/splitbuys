@@ -36,7 +36,7 @@ export function GroupScreen() {
   const mine = data.balances.balances.find((b) => b.user.id === me.id)?.netPaise ?? 0
 
   return (
-    <Screen>
+    <Screen onRefresh={reload}>
       <TopBar title={data.group.name} action={<RoundButton label="Group menu" onClick={() => setMenu(true)}><Icon name="more" size={22} /></RoundButton>} />
       <div className="flex gap-3 px-5">
         <InfoCard icon="receipt" label="Total spent" value={formatPaise(total)} />

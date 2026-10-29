@@ -10,23 +10,22 @@ import {
 } from '../ui'
 
 export function GroupsScreen() {
-  const { user, signOut } = useAuth()
+  const { user } = useAuth()
   const nav = useNavigate()
   const { toast } = useFeedback()
   const { data: groups, error, loading, reload } = useAsync(() => api.groups(), [])
   const [creating, setCreating] = useState(false)
-  const [menu, setMenu] = useState(false)
   const me = user!
 
   return (
-    <Screen className="pt-safe pb-safe">
+    <Screen className="pt-safe pb-safe" onRefresh={reload}>
       <div className="space-y-6 px-5 pb-10 pt-4">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[13px] text-muted">Welcome back</div>
             <div className="truncate text-2xl font-extrabold">{label(me)}</div>
           </div>
-          <button aria-label="Account" onClick={() => setMenu(true)}><Avatar user={me} size={46} /></button>
+          <button aria-label="Profile" onClick={() => nav('/profile')}><Avatar user={me} size={46} /></button>
         </div>
 
         <Overview groups={groups ?? []} onNewGroup={() => setCreating(true)} />
@@ -59,9 +58,6 @@ export function GroupsScreen() {
         } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
       }} />
 
-      <Sheet open={menu} onClose={() => setMenu(false)} title={me.email}>
-        <button onClick={signOut} className="w-full rounded-full border border-line py-3.5 font-semibold text-neg">Sign out</button>
-      </Sheet>
     </Screen>
   )
 }

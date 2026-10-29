@@ -6,6 +6,7 @@ import { GroupScreen } from './screens/Group'
 import { JoinScreen } from './screens/Join'
 import { LoginScreen } from './screens/Login'
 import { NameScreen } from './screens/Name'
+import { ProfileScreen } from './screens/Profile'
 import { ExpenseFormScreen } from './screens/ExpenseForm'
 
 /** Sign-in → name → app. Remembers where the user was headed via ?next=. */
@@ -32,6 +33,7 @@ export function App() {
       <Route element={<Gate page="name" />}><Route path="/name" element={<NameScreen />} /></Route>
       <Route element={<Gate page="app" />}>
         <Route path="/" element={<GroupsScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
         <Route path="/join/:token" element={<JoinScreen />} />
         <Route path="/groups/:id" element={<GroupScreen />} />
         <Route path="/groups/:id/expense/new" element={<ExpenseFormScreen />} />

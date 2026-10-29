@@ -16,6 +16,7 @@ const PATHS = {
   groups: 'M9 11a3 3 0 100-6 3 3 0 000 6zM3 20a6 6 0 0112 0M17 11a2.5 2.5 0 100-5M17 14.5A5 5 0 0121 20',
   payments: 'M3 6h18v12H3zM12 15a3 3 0 100-6 3 3 0 000 6z',
   arrow: 'M5 12h14M13 6l6 6-6 6',
+  logout: 'M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9',
   split: 'M6 4v6q0 4 4 4h8M6 20v-6M15 10l4 4-4 4',
 } as const
 export type IconName = keyof typeof PATHS
@@ -74,8 +75,61 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 }
 
 /* ---------- layout ---------- */
-export function Screen({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-bg ${className}`}>{children}</div>
+export function Screen({ children, className = '', onRefresh }: { children: ReactNode; className?: string; onRefresh?: () => void }) {
+  return (
+    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-bg ${className}`}>
+      {onRefresh && <PullIndicator onRefresh={onRefresh} />}
+      {children}
+    </div>
+  )
+}
+
+/** Touch pull-down at the top of the page; fires onRefresh past a threshold. */
+function PullIndicator({ onRefresh }: { onRefresh: () => void }) {
+  const [pull, setPull] = useState(0)
+  const [busy, setBusy] = useState(false)
+  const start = useRef<number | null>(null)
+  const latest = useRef({ pull: 0, busy: false, onRefresh })
+  latest.current = { pull, busy, onRefresh }
+
+  useEffect(() => {
+    const down = (e: TouchEvent) => { start.current = window.scrollY <= 0 && !latest.current.busy ? e.touches[0].clientY : null }
+    const move = (e: TouchEvent) => {
+      if (start.current === null) return
+      const dy = e.touches[0].clientY - start.current
+      setPull(dy > 0 && window.scrollY <= 0 ? Math.min(dy * 0.45, 84) : 0)
+    }
+    const up = () => {
+      const { pull: p, onRefresh: refresh } = latest.current
+      start.current = null
+      if (p >= 56) {
+        setBusy(true)
+        setPull(56)
+        refresh()
+        window.setTimeout(() => { setBusy(false); setPull(0) }, 700)
+      } else setPull(0)
+    }
+    window.addEventListener('touchstart', down, { passive: true })
+    window.addEventListener('touchmove', move, { passive: true })
+    window.addEventListener('touchend', up)
+    window.addEventListener('touchcancel', up)
+    return () => {
+      window.removeEventListener('touchstart', down)
+      window.removeEventListener('touchmove', move)
+      window.removeEventListener('touchend', up)
+      window.removeEventListener('touchcancel', up)
+    }
+  }, [])
+
+  const progress = Math.min(pull / 56, 1)
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center"
+      style={{ transform: `translateY(${pull - 40}px)`, opacity: progress, transition: start.current === null ? 'transform .25s, opacity .25s' : 'none' }}>
+      <div className="mt-[env(safe-area-inset-top)] grid size-9 place-items-center rounded-full border border-line bg-high shadow-lg">
+        {busy ? <Spinner className="size-4" /> : <Icon name="arrow" size={16} className="rotate-90 text-accent" />}
+      </div>
+    </div>
+  )
 }
 
 export function Spinner({ className = '' }: { className?: string }) {
