@@ -1,6 +1,6 @@
 # SplitBuys
 
-Splitwise-style expense splitting. `backend/` is Spring Boot, `frontend/` is Flutter (Android + web).
+Splitwise-style expense splitting. `backend/` is Spring Boot; `web/` is a phone-first React + Tailwind PWA.
 
 ## Run locally
 
@@ -17,13 +17,7 @@ https://myaccount.google.com/apppasswords, then in `.env` set `MAIL_ENABLED=true
 (your Gmail address) and `MAIL_PASSWORD` (the 16-letter app password). Other SMTP providers: also set
 `MAIL_HOST`, `MAIL_PORT` and `MAIL_FROM`.
 
-**Frontend**
-```
-cd frontend
-cp env/dev.json.example env/dev.json     # optional, defaults work for local web
-flutter run -d chrome --web-port 5555 --dart-define-from-file=env/dev.json
-```
-Android emulator: the API defaults to `http://10.0.2.2:8080`.
+**Web app** (see below): `cd web && npm install && npm run dev` → http://localhost:5555
 
 ## Backend architecture
 Package-by-feature (`user`, `auth`, `group`, `ledger`, `common`) with the layering and rules enforced by tests — see
@@ -31,10 +25,10 @@ Package-by-feature (`user`, `auth`, `group`, `ledger`, `common`) with the layeri
 
 ## Config
 All backend settings are environment variables, listed in `backend/.env.example`. Real env vars override `.env`.
-Frontend values (`API_URL`, `APP_URL`) are build-time `--dart-define`s and are not secret.
+The web app's only setting is `VITE_API_URL` (build-time, not secret); see `web/.env.example`.
 
 ## Web app (React PWA) — `web/`
-Phone-first React + Tailwind rewrite of the Flutter frontend, installable as a PWA.
+Phone-first React + Tailwind app, installable as a PWA. (It replaced the original Flutter client, which was removed; that code is in git history before the commit "remove the Flutter client".)
 ```
 cd web
 npm install
