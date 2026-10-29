@@ -113,7 +113,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
       <TopBar title={expense ? 'Edit expense' : 'Add expense'}
         action={expense && <RoundButton label="Delete" disabled={busy} onClick={remove}><Icon name="trash" /></RoundButton>} />
       <form className="flex flex-1 flex-col" onSubmit={(e) => { e.preventDefault(); save() }}>
-        <div className="flex-1 space-y-4 px-5 pb-6 pt-2">
+        <div className="flex-1 space-y-4 px-5 pb-6 pt-4">
           <Dashed className="px-4 py-[18px] text-center">
             <div className="text-[13px] text-muted">Total bill</div>
             <div className="mt-1 flex items-center justify-center gap-2">
@@ -149,7 +149,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
                     <input aria-label={`${label(m)} ${kind.toLowerCase()}`} inputMode={kind === 'SHARES' ? 'numeric' : 'decimal'}
                       placeholder={kind === 'SHARES' ? '1' : '0'} value={values[m.id] ?? ''}
                       onChange={(e) => setValues((v) => ({ ...v, [m.id]: e.target.value }))}
-                      className={`w-full rounded-xl border border-line bg-bg py-2.5 pl-3 text-right outline-none focus:border-accent ${suffix ? 'pr-7' : 'pr-3'}`} />
+                      className={`w-full rounded-xl border border-line bg-black/25 py-2.5 pl-3 text-right outline-none focus:border-accent/70 ${suffix ? 'pr-7' : 'pr-3'}`} />
                     {suffix && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">{suffix}</span>}
                   </div>
                 ) : null} />
@@ -159,7 +159,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
           <p role="status" className={`text-center font-semibold ${result.problem ? 'text-neg' : 'text-muted'}`}>{result.problem ?? result.hint ?? ''}</p>
         </div>
 
-        <div className="pb-safe sticky bottom-0 bg-gradient-to-t from-bg from-70% to-transparent px-5 pb-4 pt-3">
+        <div className="sticky bottom-0 bg-gradient-to-t from-[#06070c]/80 via-[#06070c]/40 to-transparent px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6">
           <ConfirmButton type="submit" busy={busy} disabled={!result.splits}>{expense ? 'Save changes' : 'Add expense'}</ConfirmButton>
         </div>
       </form>
@@ -173,11 +173,11 @@ function PersonRow({ user, name, selected, onToggle, field }: {
   return (
     <div role="checkbox" aria-checked={selected} tabIndex={0} onClick={onToggle}
       onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && (e.preventDefault(), onToggle())}
-      className={`flex items-center gap-3 rounded-[22px] border bg-surface py-2.5 pl-3 pr-3.5 ${selected ? 'border-accent/50' : 'border-line/60'}`}>
+      className={`glass-lite flex items-center gap-3 rounded-[24px] py-2.5 pl-3 pr-3.5 transition-shadow ${selected ? 'shadow-[0_0_0_1.5px_rgb(255_216_77/0.55),0_10px_28px_-12px_rgb(255_200_50/0.35)]' : ''}`}>
       <div className={selected ? '' : 'opacity-40'}><Avatar user={user} size={40} /></div>
       <span className={`min-w-0 flex-1 truncate font-semibold ${selected ? '' : 'text-muted'}`}>{name}</span>
       {field}
-      <span className={`grid size-6 place-items-center rounded-full border-2 ${selected ? 'border-accent bg-accent text-on-accent' : 'border-muted'}`}>
+      <span className={`grid size-6 place-items-center rounded-full border-2 transition-colors ${selected ? 'border-accent bg-accent text-on-accent' : 'border-white/30'}`}>
         {selected && <Icon name="check" size={14} />}
       </span>
     </div>

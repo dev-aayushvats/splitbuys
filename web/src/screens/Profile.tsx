@@ -33,14 +33,14 @@ export function ProfileScreen() {
           <input className={inputCls} autoCapitalize="words" value={name} onChange={(e) => setNameText(e.target.value)} />
         </Field>
         <button type="submit" disabled={!changed || busy}
-          className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent transition-colors disabled:bg-high disabled:text-muted">
+          className="btn-accent h-13 w-full rounded-full py-3.5 font-bold disabled:bg-none disabled:bg-white/10 disabled:text-muted disabled:shadow-none">
           Save
         </button>
       </form>
 
       <div className="mt-auto px-5 pb-6 pt-10">
         <button type="button" onClick={async () => { if (await confirm('Sign out of SplitBuys?', 'Sign out')) signOut() }}
-          className="flex w-full items-center justify-center gap-2 rounded-full border border-line py-3.5 font-semibold text-neg">
+          className="glass-lite flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-semibold text-neg">
           <Icon name="logout" size={18} /> Sign out
         </button>
       </div>

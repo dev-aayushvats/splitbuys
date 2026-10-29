@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth'
 import { dayLabel, formatDate, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
 import { label, type Expense, type GroupData, type Transfer, type User } from '../lib/types'
 import {
-  Avatar, AvatarStack, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, PillTabs, RoundButton, Screen,
+  Avatar, AvatarStack, Dashed, Dock, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, RoundButton, Screen,
   SectionTitle, Sheet, Skeleton, Tile, TopBar, tap, inputCls, useAsync, useFeedback,
 } from '../ui'
 
@@ -31,7 +31,6 @@ export function GroupScreen() {
         {error ? <ErrorRetry error={error} onRetry={reload} /> : loading && (
           <div className="space-y-4 px-5 pt-1">
             <div className="flex gap-3"><Skeleton className="h-32 flex-1 rounded-3xl" /><Skeleton className="h-32 flex-1 rounded-3xl" /></div>
-            <Skeleton className="h-[52px] rounded-full" />
             {[0, 1, 2].map((i) => <Skeleton key={i} className="h-[78px] rounded-[22px]" />)}
           </div>
         )}
@@ -45,46 +44,46 @@ export function GroupScreen() {
   return (
     <Screen onRefresh={reload}>
       <TopBar title={data.group.name} action={<RoundButton label="Group menu" onClick={() => setMenu(true)}><Icon name="more" size={22} /></RoundButton>} />
-      <div className="flex gap-3 px-5">
+      <div className="mt-4 flex gap-3 px-5">
         <InfoCard icon="receipt" label="Total spent" value={formatPaise(total)} />
         <InfoCard icon="wallet" label={mine === 0 ? 'Your balance' : mine > 0 ? 'You are owed' : 'You owe'}
           value={mine === 0 ? 'Settled up' : formatPaise(Math.abs(mine))}
           valueClass={mine === 0 ? '' : mine > 0 ? 'text-pos' : 'text-neg'} />
       </div>
-      <div className="sticky top-[68px] z-20 bg-bg/70 px-5 pb-1 pt-4 backdrop-blur-md">
-        <PillTabs labels={['Expenses', 'Balances', 'Members']} index={tab} onChange={setTab} />
-      </div>
-
-      <main key={tab} className="animate-fade flex-1 px-5 pb-28 pt-3">
+      <main key={tab} className="animate-fade flex-1 px-5 pb-40 pt-5">
         {tab === 0 && <ExpensesTab data={data} me={me} onChanged={reload} />}
         {tab === 1 && <BalancesTab data={data} me={me} onChanged={reload} />}
         {tab === 2 && <MembersTab data={data} me={me} onChanged={reload} />}
       </main>
 
+      <Dock index={tab} onChange={setTab}
+        items={[{ label: 'Expenses', icon: 'receipt' }, { label: 'Balances', icon: 'wallet' }, { label: 'Members', icon: 'groups' }]} />
+
+      {/* the add button floats above the dock, on the right */}
       {tab === 0 && (
-        <div className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[480px] justify-center pb-5">
-          <button aria-label="Add expense" onClick={() => { tap(); nav(`/groups/${id}/expense/new`) }}
-            className="animate-pop pointer-events-auto grid size-16 place-items-center rounded-full bg-accent text-on-accent shadow-xl shadow-black/50">
-            <Icon name="plus" size={34} />
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] justify-end px-5">
+          <button type="button" aria-label="Add expense" onClick={() => { tap(); nav(`/groups/${id}/expense/new`) }}
+            className="btn-accent animate-pop pointer-events-auto grid size-16 place-items-center rounded-full">
+            <Icon name="plus" size={32} />
           </button>
         </div>
       )}
 
       <Sheet open={menu} onClose={() => setMenu(false)}>
         <div className="space-y-3">
-          <button className="w-full rounded-full border border-line py-3.5 font-semibold" onClick={() => { setMenu(false); setRenaming(true) }}>Rename group</button>
-          <button className="w-full rounded-full border border-line py-3.5 font-semibold" onClick={async () => {
+          <button className="w-full rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold" onClick={() => { setMenu(false); setRenaming(true) }}>Rename group</button>
+          <button className="w-full rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Reset invite link?\nThe current link will stop working.', 'Reset'))) return
             await attempt(async () => { await api.regenerateInvite(id); reload() })
           }}>Reset invite link</button>
-          <button className="w-full rounded-full border border-line py-3.5 font-semibold text-neg" onClick={async () => {
+          <button className="w-full rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold text-neg" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Leave this group?', 'Leave'))) return
             await attempt(async () => { await api.leaveGroup(id); nav('/', { replace: true }) })
           }}>Leave group</button>
           {data.group.members.length === 1 && (
-            <button className="w-full rounded-full border border-neg/40 py-3.5 font-semibold text-neg" onClick={async () => {
+            <button className="w-full rounded-full border border-neg/40 bg-neg/10 py-3.5 font-semibold text-neg" onClick={async () => {
               setMenu(false)
               if (!(await confirm('Delete this group?\nAll its expenses and payments will be erased.', 'Delete'))) return
               await attempt(async () => { await api.deleteGroup(id); nav('/', { replace: true }) })
@@ -118,7 +117,7 @@ function RenameSheet({ open, current, onClose, onSave }: { open: boolean; curren
         <Field label="Group name">
           <input className={inputCls} autoFocus autoCapitalize="words" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
-        <button type="submit" disabled={!changed || busy} className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent disabled:bg-high disabled:text-muted">Save</button>
+        <button type="submit" disabled={!changed || busy} className="btn-accent h-13 w-full rounded-full py-3.5 font-bold disabled:bg-none disabled:bg-white/10 disabled:text-muted disabled:shadow-none">Save</button>
       </form>
     </Sheet>
   )
@@ -221,7 +220,7 @@ function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
             <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{SPLIT_LABEL[e.splitType]}</div>
             <div className="max-h-[40dvh] space-y-2 overflow-y-auto">
               {e.shares.map((sh) => (
-                <div key={sh.user.id} className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2.5">
+                <div key={sh.user.id} className="flex items-center gap-3 rounded-2xl bg-white/[0.07] px-3 py-2.5 ring-1 ring-white/10">
                   <Avatar user={sh.user} size={32} />
                   <span className="min-w-0 flex-1 truncate font-medium">{sh.user.id === me.id ? `${label(sh.user)} (you)` : label(sh.user)}</span>
                   <span className="font-bold">{formatPaise(sh.amountPaise)}</span>
@@ -230,8 +229,8 @@ function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
             </div>
           </div>
           <div className="flex gap-3">
-            <button type="button" onClick={() => onDelete(e)} className="flex-1 rounded-full border border-line py-3.5 font-semibold text-neg">Delete</button>
-            <button type="button" onClick={() => onEdit(e)} className="flex-1 rounded-full bg-accent py-3.5 font-bold text-on-accent">Edit</button>
+            <button type="button" onClick={() => onDelete(e)} className="flex-1 rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold text-neg">Delete</button>
+            <button type="button" onClick={() => onEdit(e)} className="btn-accent flex-1 rounded-full py-3.5 font-bold">Edit</button>
           </div>
         </div>
       )}
@@ -317,7 +316,7 @@ function PaymentForm({ transfer, onSubmit }: { transfer: Transfer; onSubmit: (pa
         </div>
       </Field>
       {!valid && text !== '' && <p className="px-1 text-sm text-neg">Enter a valid amount</p>}
-      <button type="submit" disabled={!valid || busy} className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent disabled:opacity-45">Record</button>
+      <button type="submit" disabled={!valid || busy} className="btn-accent h-13 w-full rounded-full py-3.5 font-bold disabled:opacity-45">Record</button>
     </form>
   )
 }
@@ -344,7 +343,7 @@ function MembersTab({ data, me, onChanged }: { data: GroupData; me: User; onChan
         <div className="font-semibold">Splitting with</div>
         <div className="mt-2.5 flex justify-center"><AvatarStack users={group.members} size={44} max={5} /></div>
         <div className="mt-2 text-[12.5px] text-muted">{group.members.length} {group.members.length === 1 ? 'person' : 'people'}</div>
-        <div className="mt-4 flex items-center gap-2 rounded-[18px] bg-surface py-1.5 pl-3.5 pr-1.5">
+        <div className="mt-4 flex items-center gap-2 rounded-[20px] bg-black/25 py-1.5 pl-3.5 pr-1.5 ring-1 ring-white/10">
           <span className="min-w-0 flex-1 select-all truncate text-left text-[12.5px] text-muted">{link}</span>
           <PillButton onClick={share} className="h-10 px-3.5"><Icon name="copy" size={16} />{'share' in navigator ? 'Share' : 'Copy'}</PillButton>
         </div>

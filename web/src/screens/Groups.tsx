@@ -65,7 +65,8 @@ function Overview({ groups, onNewGroup }: { groups: GroupSummary[]; onNewGroup: 
   const owe = groups.filter((g) => g.myBalancePaise < 0).reduce((s, g) => s - g.myBalancePaise, 0)
   const net = owed - owe
   return (
-    <div className="rounded-[28px] border-[1.5px] border-[#54445E] bg-gradient-to-br from-[#30263A] to-[#181A23] p-[18px]">
+    <div className="glass relative overflow-hidden rounded-[32px] p-5">
+      <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 size-48 rounded-full bg-[radial-gradient(circle,rgb(255_200_50/0.30),transparent_68%)]" />
       <div className="flex items-stretch gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-lg font-bold">Overview</div>
@@ -75,10 +76,10 @@ function Overview({ groups, onNewGroup }: { groups: GroupSummary[]; onNewGroup: 
           </dl>
           <PillButton onClick={onNewGroup} className="mt-3">New group</PillButton>
         </div>
-        <Dashed className="flex w-[124px] shrink-0 flex-col items-center justify-center rounded-[20px] px-2.5 py-4 text-center">
+        <Dashed className="relative flex w-[124px] shrink-0 flex-col items-center justify-center rounded-[24px] px-2.5 py-4 text-center">
           <div className="text-xs text-muted">Net balance</div>
           <div className="mt-1.5 max-w-full truncate text-xl font-extrabold">{formatPaise(Math.abs(net))}</div>
-          <div className="mt-2.5 grid size-9 place-items-center rounded-full bg-accent/15 text-accent"><Icon name="wallet" size={19} /></div>
+          <div className="mt-2.5 grid size-9 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/25"><Icon name="wallet" size={19} /></div>
           <div className="mt-2 text-[11.5px] text-muted">{net === 0 ? 'all settled' : net > 0 ? 'you are owed' : 'you owe'}</div>
         </Dashed>
       </div>
@@ -104,7 +105,7 @@ function NewGroupSheet({ open, onClose, onCreate }: { open: boolean; onClose: ()
           <input className={inputCls} autoFocus autoCapitalize="words" value={name} onChange={(e) => setName(e.target.value)} />
         </Field>
         <button type="submit" disabled={!name.trim() || busy}
-          className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent disabled:opacity-45">Create</button>
+          className="btn-accent h-13 w-full rounded-full py-3.5 font-bold disabled:opacity-45">Create</button>
       </form>
     </Sheet>
   )

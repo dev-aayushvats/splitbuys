@@ -59,16 +59,16 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     <FeedbackCtx.Provider value={{ toast, confirm }}>
       {children}
       {msg && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[60] flex justify-center px-6">
-          <div role="status" className="animate-rise pointer-events-auto rounded-2xl border border-line bg-high px-4 py-3 text-sm shadow-xl">
+        <div className="pointer-events-none fixed inset-x-0 bottom-28 z-[60] flex justify-center px-6">
+          <div role="status" className="glass-strong animate-rise pointer-events-auto rounded-full px-5 py-3 text-sm font-medium">
             {msg}
           </div>
         </div>
       )}
       <Sheet open={!!ask} onClose={() => close(false)} title={ask?.title}>
         <div className="flex gap-3">
-          <button type="button" className="h-13 flex-1 rounded-full border border-line py-3.5 font-semibold" onClick={() => close(false)}>Cancel</button>
-          <button type="button" className="h-13 flex-1 rounded-full bg-neg py-3.5 font-bold text-on-accent" onClick={() => close(true)}>{ask?.action}</button>
+          <button type="button" className="h-13 flex-1 rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold" onClick={() => close(false)}>Cancel</button>
+          <button type="button" className="h-13 flex-1 rounded-full bg-neg py-3.5 font-bold text-on-accent shadow-[0_10px_28px_-8px_rgb(255_90_90/0.6),inset_0_1px_0_rgb(255_255_255/0.4)]" onClick={() => close(true)}>{ask?.action}</button>
         </div>
       </Sheet>
     </FeedbackCtx.Provider>
@@ -79,7 +79,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 export const tap = () => { try { navigator.vibrate?.(8) } catch { /* unsupported */ } }
 
 export const Skeleton = ({ className = '' }: { className?: string }) => (
-  <div aria-hidden className={`animate-pulse rounded-2xl bg-surface ${className}`} />
+  <div aria-hidden className={`animate-pulse rounded-2xl bg-white/[0.07] ${className}`} />
 )
 
 export function EmptyState({ icon, title, children }: { icon: IconName; title: string; children?: ReactNode }) {
@@ -95,7 +95,7 @@ export function EmptyState({ icon, title, children }: { icon: IconName; title: s
 /* ---------- layout ---------- */
 export function Screen({ children, className = '', onRefresh }: { children: ReactNode; className?: string; onRefresh?: () => void }) {
   return (
-    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-bg glow ${className}`}>
+    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${className}`}>
       {onRefresh && <PullIndicator onRefresh={onRefresh} />}
       {children}
     </div>
@@ -143,7 +143,7 @@ function PullIndicator({ onRefresh }: { onRefresh: () => void }) {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center"
       style={{ transform: `translateY(${pull - 40}px)`, opacity: progress, transition: start.current === null ? 'transform .25s, opacity .25s' : 'none' }}>
-      <div className="mt-[env(safe-area-inset-top)] grid size-9 place-items-center rounded-full border border-line bg-high shadow-lg">
+      <div className="glass-strong mt-[env(safe-area-inset-top)] grid size-9 place-items-center rounded-full">
         {busy ? <Spinner className="size-4" /> : <Icon name="arrow" size={16} className="rotate-90 text-accent" />}
       </div>
     </div>
@@ -167,14 +167,15 @@ export function ErrorRetry({ error, onRetry }: { error: unknown; onRetry: () => 
   )
 }
 
+/** A frosted pane. (Named for the dashed outline it replaced; call sites pass padding/radius.) */
 export const Dashed = ({ children, className = 'p-4' }: { children: ReactNode; className?: string }) => (
-  <div className={`rounded-3xl border border-dashed border-dash ${className}`}>{children}</div>
+  <div className={`glass-lite rounded-[28px] ${className}`}>{children}</div>
 )
 
 export function RoundButton({ children, onClick, label: aria, disabled }: { children: ReactNode; onClick?: () => void; label: string; disabled?: boolean }) {
   return (
     <button type="button" aria-label={aria} onClick={onClick} disabled={disabled}
-      className="grid size-11 place-items-center rounded-full border border-line bg-surface disabled:text-muted">
+      className="grid size-10 place-items-center rounded-full bg-white/10 transition-colors active:bg-white/20 disabled:text-muted">
       {children}
     </button>
   )
@@ -183,19 +184,52 @@ export function RoundButton({ children, onClick, label: aria, disabled }: { chil
 export function TopBar({ title, showBack = true, action }: { title: string; showBack?: boolean; action?: ReactNode }) {
   const nav = useNavigate()
   return (
-    <header className="pt-safe sticky top-0 z-30 bg-bg/70 backdrop-blur-md">
-      <div className="flex items-center gap-2 px-5 pb-2 pt-3">
-        <div className="w-11">
+    <header className="pt-safe sticky top-0 z-30">
+      {/* the bar floats: inset from the edges, fully rounded, with the page scrolling beneath its frosted glass */}
+      <div className="glass-strong mx-4 mt-3 flex items-center gap-2 rounded-full p-1.5">
+        <div className="w-10">
           {showBack && (
             <RoundButton label="Back" onClick={() => (window.history.state?.idx > 0 ? nav(-1) : nav('/', { replace: true }))}>
               <Icon name="back" />
             </RoundButton>
           )}
         </div>
-        <h1 className="min-w-0 flex-1 truncate text-center text-xl font-bold">{title}</h1>
-        <div className="flex w-11 justify-end">{action}</div>
+        <h1 className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold">{title}</h1>
+        <div className="flex w-10 justify-end">{action}</div>
       </div>
     </header>
+  )
+}
+
+/** Ambient light behind the whole app: slowly drifting colour orbs that the glass panes blur and refract. */
+export function Backdrop() {
+  return (
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#0b0c18] via-[#080913] to-[#06070c]">
+      <div className="animate-drift-a absolute -left-28 -top-24 size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(255_196_48/0.34),transparent_65%)]" />
+      <div className="animate-drift-b absolute -right-40 top-[28%] size-[30rem] rounded-full bg-[radial-gradient(circle,rgb(124_92_255/0.38),transparent_65%)]" />
+      <div className="animate-drift-c absolute -bottom-32 left-[-4rem] size-[28rem] rounded-full bg-[radial-gradient(circle,rgb(34_211_190/0.26),transparent_65%)]" />
+    </div>
+  )
+}
+
+/** Floating bottom navigation: a frosted pill with a sliding highlight. */
+export function Dock({ items, index, onChange }: { items: { label: string; icon: IconName }[]; index: number; onChange: (i: number) => void }) {
+  const W = 100
+  return (
+    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[480px] justify-center pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div role="tablist" className="glass-strong pointer-events-auto relative flex rounded-full p-1.5">
+        <div aria-hidden className="absolute inset-y-1.5 rounded-full bg-white/[0.16] shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ width: W, left: 6 + index * W }} />
+        {items.map((it, i) => (
+          <button type="button" key={it.label} role="tab" aria-selected={i === index} onClick={() => { tap(); onChange(i) }}
+            className={`relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors duration-200 ${i === index ? 'text-accent' : 'text-muted'}`}
+            style={{ width: W }}>
+            <Icon name={it.icon} size={21} />
+            {it.label}
+          </button>
+        ))}
+      </div>
+    </nav>
   )
 }
 
@@ -208,7 +242,7 @@ const PALETTES = [
 export function Avatar({ user, size = 44 }: { user: User; size?: number }) {
   const [a, b] = PALETTES[user.id % PALETTES.length]
   return (
-    <div className="grid shrink-0 place-items-center rounded-full font-extrabold text-on-accent"
+    <div className="grid shrink-0 place-items-center rounded-full font-extrabold text-on-accent shadow-[0_6px_16px_-4px_rgb(0_0_0/0.5),inset_0_1px_0_rgb(255_255_255/0.45)] ring-1 ring-white/25"
       style={{ width: size, height: size, fontSize: size * 0.42, background: `linear-gradient(135deg, ${a}, ${b})` }}>
       {[...label(user)][0]?.toUpperCase()}
     </div>
@@ -220,7 +254,7 @@ export function AvatarStack({ users, size = 34, max = 4 }: { users: User[]; size
   const extra = users.length - shown.length
   const step = size * 0.62
   const count = shown.length + (extra > 0 ? 1 : 0)
-  const ring = 'absolute rounded-full bg-bg p-0.5'
+  const ring = 'absolute rounded-full bg-[#0b0c18] p-0.5'
   return (
     <div className="relative shrink-0" style={{ width: size + 4 + step * (count - 1), height: size + 4 }}>
       {shown.map((u, i) => (
@@ -228,7 +262,7 @@ export function AvatarStack({ users, size = 34, max = 4 }: { users: User[]; size
       ))}
       {extra > 0 && (
         <div className={ring} style={{ left: shown.length * step }}>
-          <div className="grid place-items-center rounded-full bg-high font-bold" style={{ width: size, height: size, fontSize: size * 0.34 }}>+{extra}</div>
+          <div className="grid place-items-center rounded-full bg-white/15 font-bold ring-1 ring-white/20" style={{ width: size, height: size, fontSize: size * 0.34 }}>+{extra}</div>
         </div>
       )}
     </div>
@@ -241,7 +275,7 @@ export function ConfirmButton({ children, onClick, busy, disabled, type = 'butto
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled || busy}
-      className="flex h-15 w-full items-center rounded-full bg-gradient-to-r from-accent to-accent-deep pl-1.5 shadow-lg shadow-accent/15 transition-[transform,opacity] pr-14 text-base font-bold text-on-accent disabled:opacity-45">
+      className="btn-accent flex h-15 w-full items-center rounded-full pl-1.5 pr-14 text-base font-bold transition-[transform,opacity] disabled:opacity-45">
       <span className="grid size-12 shrink-0 place-items-center rounded-full bg-on-accent text-accent">
         {busy ? <Spinner className="size-5" /> : <Icon name="arrow" size={22} />}
       </span>
@@ -253,7 +287,7 @@ export function ConfirmButton({ children, onClick, busy, disabled, type = 'butto
 export function PillButton({ children, onClick, disabled, className = '' }: { children: ReactNode; onClick?: () => void; disabled?: boolean; className?: string }) {
   return (
     <button type="button" onClick={onClick} disabled={disabled}
-      className={`inline-flex h-11 items-center justify-center gap-2 rounded-full bg-accent px-5 text-sm font-bold text-on-accent disabled:bg-high disabled:text-muted ${className}`}>
+      className={`btn-accent inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold disabled:bg-none disabled:bg-white/10 disabled:text-muted disabled:shadow-none ${className}`}>
       {children}
     </button>
   )
@@ -262,8 +296,8 @@ export function PillButton({ children, onClick, disabled, className = '' }: { ch
 export function PillTabs({ labels, index, onChange }: { labels: string[]; index: number; onChange: (i: number) => void }) {
   const n = labels.length
   return (
-    <div role="tablist" className="relative flex rounded-full border border-line bg-surface p-1">
-      <div aria-hidden className="absolute inset-y-1 rounded-full bg-accent shadow-md shadow-accent/20 transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+    <div role="tablist" className="glass-lite relative flex rounded-full p-1">
+      <div aria-hidden className="btn-accent absolute inset-y-1 rounded-full transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
         style={{ width: `calc((100% - 8px) / ${n})`, left: `calc(4px + ${index} * (100% - 8px) / ${n})` }} />
       {labels.map((l, i) => (
         <button type="button" key={l} role="tab" aria-selected={i === index} onClick={() => { tap(); onChange(i) }}
@@ -276,7 +310,7 @@ export function PillTabs({ labels, index, onChange }: { labels: string[]; index:
 }
 
 export const inputCls =
-  'w-full rounded-2xl border border-line bg-surface px-4 py-4 outline-none placeholder:text-muted focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-60'
+  'w-full rounded-2xl border border-line bg-white/[0.06] px-4 py-4 shadow-[inset_0_2px_8px_rgb(0_0_0/0.28)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-muted/70 focus:border-accent/70 focus:bg-white/[0.09] focus:ring-4 focus:ring-accent/15 disabled:opacity-60'
 
 export function Field({ label: text, children }: { label: string; children: ReactNode }) {
   return (
@@ -293,7 +327,7 @@ export function Tile({ leading, title, subtitle, trailing, onClick }: {
 }) {
   const Tag = onClick ? 'button' : 'div'
   return (
-    <Tag onClick={onClick} className="animate-rise flex w-full items-center gap-3 rounded-[22px] border border-line/60 bg-surface p-3.5 text-left transition-colors active:bg-high">
+    <Tag onClick={onClick} className="glass-lite animate-rise flex w-full items-center gap-3 rounded-[26px] p-3.5 text-left transition-[background-color,transform] active:bg-white/10">
       {leading}
       <div className="min-w-0 flex-1">
         <div className="truncate text-[15.5px] font-semibold">{title}</div>
@@ -305,14 +339,14 @@ export function Tile({ leading, title, subtitle, trailing, onClick }: {
 }
 
 export function IconBadge({ icon, tone = 'accent' }: { icon: IconName; tone?: 'accent' | 'pos' }) {
-  const cls = tone === 'pos' ? 'bg-pos/15 text-pos' : 'bg-accent/15 text-accent'
+  const cls = tone === 'pos' ? 'bg-pos/15 text-pos ring-1 ring-pos/25' : 'bg-accent/15 text-accent ring-1 ring-accent/25'
   return <div className={`grid size-[46px] shrink-0 place-items-center rounded-2xl ${cls}`}><Icon name={icon} size={22} /></div>
 }
 
 export function InfoCard({ icon, label: text, value, valueClass = '' }: { icon: IconName; label: string; value: string; valueClass?: string }) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-center rounded-3xl border-[1.5px] border-dash bg-gradient-to-br from-high to-surface px-3 py-4">
-      <div className="grid size-10 place-items-center rounded-full bg-accent/15 text-accent"><Icon name={icon} size={21} /></div>
+    <div className="glass flex min-w-0 flex-1 flex-col items-center rounded-[28px] px-3 py-4">
+      <div className="grid size-10 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/25"><Icon name={icon} size={21} /></div>
       <div className="mt-2 text-xs text-muted">{text}</div>
       <div className={`mt-0.5 max-w-full truncate text-[19px] font-extrabold ${valueClass}`}>{value}</div>
     </div>
@@ -350,10 +384,10 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   }, [open, onClose])
   if (!open) return null
   return createPortal(
-    <div className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
+    <div className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[3px]" onClick={onClose}>
       <div role="dialog" aria-modal onClick={(e) => e.stopPropagation()}
-        className="animate-sheet pb-safe w-full max-w-[480px] rounded-t-[28px] border-t border-line bg-high px-5 pb-5 pt-3">
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
+        className="glass-strong animate-sheet mb-[max(0.75rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-[456px] rounded-[32px] px-5 pb-5 pt-3">
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/25" />
         {title && <h2 className="mb-4 whitespace-pre-line text-lg font-bold">{title}</h2>}
         {children}
       </div>
@@ -373,8 +407,8 @@ export function OfflineBanner() {
   }, [])
   if (online) return null
   return (
-    <div role="alert" className="pt-safe animate-fade fixed inset-x-0 top-0 z-[70] bg-neg text-on-accent">
-      <div className="mx-auto max-w-[480px] px-5 py-1.5 text-center text-[13px] font-semibold">You're offline · changes won't save</div>
+    <div role="alert" className="pt-safe animate-rise pointer-events-none fixed inset-x-0 top-0 z-[70]">
+      <div className="glass-strong mx-auto mt-3 w-fit max-w-[calc(100%-2rem)] rounded-full px-4 py-2 text-center text-[13px] font-semibold text-neg">You're offline · changes won't save</div>
     </div>
   )
 }
@@ -396,11 +430,11 @@ export function useAsync<T>(load: () => Promise<T>, deps: unknown[]) {
 export function AuthPage({ title, subtitle, children }: { title: string; subtitle?: string; children: ReactNode }) {
   return (
     <Screen className="pt-safe pb-safe">
-      <div className="flex flex-1 flex-col justify-center px-6 py-8">
-        <div className="mx-auto grid size-[72px] place-items-center rounded-full bg-accent text-on-accent"><Icon name="split" size={36} /></div>
-        <h1 className="mt-6 text-center text-[26px] font-extrabold">{title}</h1>
+      <div className="flex flex-1 flex-col justify-center px-5 py-8">
+        <div className="btn-accent mx-auto grid size-[76px] place-items-center rounded-[26px] shadow-[0_18px_50px_-10px_rgb(255_200_50/0.55)]"><Icon name="split" size={38} /></div>
+        <h1 className="mt-6 text-center text-[28px] font-extrabold">{title}</h1>
         {subtitle && <p className="mt-2 text-center text-muted">{subtitle}</p>}
-        <div className="mt-7 space-y-5">{children}</div>
+        <div className="glass mt-7 space-y-5 rounded-[32px] p-5">{children}</div>
       </div>
     </Screen>
   )
