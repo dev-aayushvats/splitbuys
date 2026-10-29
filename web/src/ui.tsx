@@ -74,10 +74,27 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
   )
 }
 
+/** Light haptic tick where the browser supports it (Android); a no-op elsewhere. */
+export const tap = () => { try { navigator.vibrate?.(8) } catch { /* unsupported */ } }
+
+export const Skeleton = ({ className = '' }: { className?: string }) => (
+  <div aria-hidden className={`animate-pulse rounded-2xl bg-surface ${className}`} />
+)
+
+export function EmptyState({ icon, title, children }: { icon: IconName; title: string; children?: ReactNode }) {
+  return (
+    <div className="animate-rise flex flex-col items-center px-6 py-10 text-center">
+      <div className="grid size-16 place-items-center rounded-full bg-accent/10 text-accent ring-8 ring-accent/5"><Icon name={icon} size={28} /></div>
+      <div className="mt-5 text-lg font-bold">{title}</div>
+      {children && <p className="mt-1.5 max-w-[16rem] leading-relaxed text-muted">{children}</p>}
+    </div>
+  )
+}
+
 /* ---------- layout ---------- */
 export function Screen({ children, className = '', onRefresh }: { children: ReactNode; className?: string; onRefresh?: () => void }) {
   return (
-    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-bg ${className}`}>
+    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col bg-bg glow ${className}`}>
       {onRefresh && <PullIndicator onRefresh={onRefresh} />}
       {children}
     </div>
@@ -165,7 +182,7 @@ export function RoundButton({ children, onClick, label: aria, disabled }: { chil
 export function TopBar({ title, showBack = true, action }: { title: string; showBack?: boolean; action?: ReactNode }) {
   const nav = useNavigate()
   return (
-    <header className="pt-safe sticky top-0 z-30 bg-bg/90 backdrop-blur">
+    <header className="pt-safe sticky top-0 z-30 bg-bg/70 backdrop-blur-md">
       <div className="flex items-center gap-2 px-5 pb-2 pt-3">
         <div className="w-11">
           {showBack && (
@@ -223,7 +240,7 @@ export function ConfirmButton({ children, onClick, busy, disabled, type = 'butto
 }) {
   return (
     <button type={type} onClick={onClick} disabled={disabled || busy}
-      className="flex h-15 w-full items-center rounded-full bg-gradient-to-r from-accent to-accent-deep pl-1.5 pr-14 text-base font-bold text-on-accent disabled:opacity-45">
+      className="flex h-15 w-full items-center rounded-full bg-gradient-to-r from-accent to-accent-deep pl-1.5 shadow-lg shadow-accent/15 transition-[transform,opacity] pr-14 text-base font-bold text-on-accent disabled:opacity-45">
       <span className="grid size-12 shrink-0 place-items-center rounded-full bg-on-accent text-accent">
         {busy ? <Spinner className="size-5" /> : <Icon name="arrow" size={22} />}
       </span>
@@ -242,11 +259,14 @@ export function PillButton({ children, onClick, disabled, className = '' }: { ch
 }
 
 export function PillTabs({ labels, index, onChange }: { labels: string[]; index: number; onChange: (i: number) => void }) {
+  const n = labels.length
   return (
-    <div role="tablist" className="flex rounded-full border border-line bg-surface p-1">
+    <div role="tablist" className="relative flex rounded-full border border-line bg-surface p-1">
+      <div aria-hidden className="absolute inset-y-1 rounded-full bg-accent shadow-md shadow-accent/20 transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ width: `calc((100% - 8px) / ${n})`, left: `calc(4px + ${index} * (100% - 8px) / ${n})` }} />
       {labels.map((l, i) => (
-        <button type="button" key={l} role="tab" aria-selected={i === index} onClick={() => onChange(i)}
-          className={`flex-1 rounded-full py-2.5 text-[13.5px] font-bold transition-colors ${i === index ? 'bg-accent text-on-accent' : 'text-muted'}`}>
+        <button type="button" key={l} role="tab" aria-selected={i === index} onClick={() => { tap(); onChange(i) }}
+          className={`relative z-10 flex-1 rounded-full py-2.5 text-[13.5px] font-bold transition-colors duration-200 ${i === index ? 'text-on-accent' : 'text-muted'}`}>
           {l}
         </button>
       ))}

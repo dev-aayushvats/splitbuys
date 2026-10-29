@@ -5,8 +5,8 @@ import { useAuth } from '../lib/auth'
 import { formatPaise } from '../lib/money'
 import { label, type GroupSummary } from '../lib/types'
 import {
-  Avatar, BalanceText, Dashed, ErrorRetry, Field, Icon, IconBadge, PillButton, Screen, SectionTitle,
-  Sheet, Spinner, Tile, inputCls, useAsync, useFeedback,
+  Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, PillButton, Screen, SectionTitle,
+  Sheet, Skeleton, Tile, inputCls, useAsync, useFeedback,
 } from '../ui'
 
 export function GroupsScreen() {
@@ -32,12 +32,10 @@ export function GroupsScreen() {
 
         <section>
           <SectionTitle trailing={groups && <span className="text-muted">{groups.length}</span>}>Your groups</SectionTitle>
-          {loading && !groups ? <div className="grid place-items-center p-8"><Spinner /></div>
+          {loading && !groups ? <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[78px] rounded-[22px]" />)}</div>
             : error && !groups ? <ErrorRetry error={error} onRetry={reload} />
             : groups && groups.length === 0 ? (
-              <Dashed className="p-6 text-center leading-relaxed text-muted">
-                No groups yet.<br />Create one, or open an invite link from a friend.
-              </Dashed>
+              <Dashed><EmptyState icon="groups" title="No groups yet">Create one, or open an invite link from a friend.</EmptyState></Dashed>
             ) : (
               <div className="space-y-3">
                 {groups?.map((g) => (

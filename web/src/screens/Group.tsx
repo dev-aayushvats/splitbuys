@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { formatDate, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
+import { dayLabel, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
 import { label, type GroupData, type Transfer, type User } from '../lib/types'
 import {
-  Avatar, AvatarStack, Dashed, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, PillTabs, RoundButton, Screen,
-  SectionTitle, Sheet, Spinner, Tile, TopBar, inputCls, useAsync, useFeedback,
+  Avatar, AvatarStack, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, PillTabs, RoundButton, Screen,
+  SectionTitle, Sheet, Skeleton, Tile, TopBar, tap, inputCls, useAsync, useFeedback,
 } from '../ui'
 
 export function GroupScreen() {
@@ -27,7 +27,13 @@ export function GroupScreen() {
     return (
       <Screen>
         <TopBar title="" />
-        {error ? <ErrorRetry error={error} onRetry={reload} /> : loading && <div className="grid flex-1 place-items-center"><Spinner /></div>}
+        {error ? <ErrorRetry error={error} onRetry={reload} /> : loading && (
+          <div className="space-y-4 px-5 pt-1">
+            <div className="flex gap-3"><Skeleton className="h-32 flex-1 rounded-3xl" /><Skeleton className="h-32 flex-1 rounded-3xl" /></div>
+            <Skeleton className="h-[52px] rounded-full" />
+            {[0, 1, 2].map((i) => <Skeleton key={i} className="h-[78px] rounded-[22px]" />)}
+          </div>
+        )}
       </Screen>
     )
   }
@@ -44,7 +50,7 @@ export function GroupScreen() {
           value={mine === 0 ? 'Settled up' : formatPaise(Math.abs(mine))}
           valueClass={mine === 0 ? '' : mine > 0 ? 'text-pos' : 'text-neg'} />
       </div>
-      <div className="sticky top-[68px] z-20 bg-bg/90 px-5 pb-1 pt-4 backdrop-blur">
+      <div className="sticky top-[68px] z-20 bg-bg/70 px-5 pb-1 pt-4 backdrop-blur-md">
         <PillTabs labels={['Expenses', 'Balances', 'Members']} index={tab} onChange={setTab} />
       </div>
 
@@ -56,7 +62,7 @@ export function GroupScreen() {
 
       {tab === 0 && (
         <div className="pb-safe pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[480px] justify-center pb-5">
-          <button aria-label="Add expense" onClick={() => nav(`/groups/${id}/expense/new`)}
+          <button aria-label="Add expense" onClick={() => { tap(); nav(`/groups/${id}/expense/new`) }}
             className="animate-pop pointer-events-auto grid size-16 place-items-center rounded-full bg-accent text-on-accent shadow-xl shadow-black/50">
             <Icon name="plus" size={34} />
           </button>
@@ -110,7 +116,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
     }
     return (
       <Tile key={`e${e.id}`} leading={<IconBadge icon="receipt" />} title={e.description}
-        subtitle={`${who(e.payer, me)} paid ${formatPaise(e.amountPaise)} · ${formatDate(e.createdAt)}`}
+        subtitle={`${who(e.payer, me)} paid ${formatPaise(e.amountPaise)}`}
         trailing={<div className={`whitespace-pre-line text-right text-[13px] font-bold ${cls}`}>{note}</div>}
         onClick={() => nav(`/groups/${gid}/expense/${e.id}`)} />
     )
@@ -120,7 +126,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
     return (
       <Tile key={`s${s.id}`} leading={<IconBadge icon="payments" tone="pos" />}
         title={`${who(s.fromUser, me)} paid ${s.toUser.id === me.id ? 'you' : label(s.toUser)}`}
-        subtitle={`Payment · ${formatDate(s.createdAt)} · tap to delete`}
+        subtitle="Payment · tap to delete"
         trailing={<span className="font-extrabold text-pos">{formatPaise(s.amountPaise)}</span>}
         onClick={async () => {
           if (!(await confirm(`Delete this payment of ${formatPaise(s.amountPaise)}?`))) return
@@ -130,9 +136,24 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
   }
 
   if (items.length === 0) {
-    return <p className="p-8 text-center leading-relaxed text-muted">No expenses yet.<br />Tap + to add the first one.</p>
+    return <EmptyState icon="receipt" title="No expenses yet">Tap the + button to add the first one.</EmptyState>
   }
-  return <div className="space-y-3">{items.map((i) => i.node)}</div>
+  const days: { day: string; nodes: React.ReactNode[] }[] = []
+  for (const i of items) {
+    const day = dayLabel(i.at)
+    if (days.at(-1)?.day === day) days.at(-1)!.nodes.push(i.node)
+    else days.push({ day, nodes: [i.node] })
+  }
+  return (
+    <div className="space-y-5">
+      {days.map((d) => (
+        <section key={d.day}>
+          <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{d.day}</h3>
+          <div className="space-y-3">{d.nodes}</div>
+        </section>
+      ))}
+    </div>
+  )
 }
 
 /* ---------- balances ---------- */

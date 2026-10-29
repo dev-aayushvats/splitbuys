@@ -33,7 +33,7 @@ export function ProfileScreen() {
           <input className={inputCls} autoCapitalize="words" value={name} onChange={(e) => setNameText(e.target.value)} />
         </Field>
         <button type="submit" disabled={!changed || busy}
-          className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent transition-opacity disabled:opacity-40">
+          className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent transition-colors disabled:bg-high disabled:text-muted">
           Save
         </button>
       </form>

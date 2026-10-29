@@ -6,7 +6,7 @@ import { formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
 import { label, type Expense, type GroupDetail, type SplitInput, type SplitType, type User } from '../lib/types'
 import {
   Avatar, ConfirmButton, Dashed, ErrorRetry, Field, Icon, PillTabs, RoundButton, Screen, SectionTitle, Spinner, TopBar,
-  inputCls, useAsync, useFeedback,
+  inputCls, tap, useAsync, useFeedback,
 } from '../ui'
 
 const KINDS: { api: SplitType; label: string }[] = [
@@ -113,7 +113,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
     setNote(null)
     setValues({})
   }
-  const toggle = (id: number) => setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n })
+  const toggle = (id: number) => { tap(); setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n }) }
 
   async function save() {
     if (!result.splits) return
@@ -152,7 +152,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
               <span className="text-4xl font-extrabold text-muted">₹</span>
               <input aria-label="Amount" inputMode="decimal" placeholder="0.00" autoFocus={!expense} value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="w-44 bg-transparent text-center text-4xl font-extrabold outline-none placeholder:text-line" />
+                className="amount-input bg-transparent text-center text-4xl font-extrabold outline-none placeholder:text-line" />
             </div>
           </Dashed>
 
