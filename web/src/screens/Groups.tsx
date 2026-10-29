@@ -37,7 +37,7 @@ export function GroupsScreen() {
             : groups && groups.length === 0 ? (
               <Dashed><EmptyState icon="groups" title="No groups yet">Create one, or open an invite link from a friend.</EmptyState></Dashed>
             ) : (
-              <div className="space-y-3">
+              <div className="stagger space-y-3">
                 {groups?.map((g) => (
                   <Tile key={g.id} leading={<IconBadge icon="groups" />} title={g.name}
                     subtitle={`${g.memberCount} member${g.memberCount === 1 ? '' : 's'}`}

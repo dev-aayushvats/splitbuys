@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { formatPaise } from './lib/money'
@@ -59,10 +59,8 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     <FeedbackCtx.Provider value={{ toast, confirm }}>
       {children}
       {msg && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-28 z-[60] flex justify-center px-6">
-          <div role="status" className="glass-strong animate-rise pointer-events-auto rounded-full px-5 py-3 text-sm font-medium">
-            {msg}
-          </div>
+        <div role="status" className="glass-strong animate-rise fixed bottom-28 left-1/2 z-[60] w-max max-w-[calc(100%-3rem)] -translate-x-1/2 rounded-full px-5 py-3 text-center text-sm font-medium">
+          {msg}
         </div>
       )}
       <Sheet open={!!ask} onClose={() => close(false)} title={ask?.title}>
@@ -79,7 +77,9 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
 export const tap = () => { try { navigator.vibrate?.(8) } catch { /* unsupported */ } }
 
 export const Skeleton = ({ className = '' }: { className?: string }) => (
-  <div aria-hidden className={`animate-pulse rounded-2xl bg-white/[0.07] ${className}`} />
+  <div aria-hidden className={`glass-lite relative overflow-hidden rounded-2xl ${className}`}>
+    <div className="animate-shimmer absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/[0.09] to-transparent" />
+  </div>
 )
 
 export function EmptyState({ icon, title, children }: { icon: IconName; title: string; children?: ReactNode }) {
@@ -95,7 +95,7 @@ export function EmptyState({ icon, title, children }: { icon: IconName; title: s
 /* ---------- layout ---------- */
 export function Screen({ children, className = '', onRefresh }: { children: ReactNode; className?: string; onRefresh?: () => void }) {
   return (
-    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col ${className}`}>
+    <div className={`animate-fade mx-auto flex min-h-dvh w-full max-w-[480px] flex-col overflow-x-clip ${className}`}>
       {onRefresh && <PullIndicator onRefresh={onRefresh} />}
       {children}
     </div>
@@ -141,11 +141,9 @@ function PullIndicator({ onRefresh }: { onRefresh: () => void }) {
 
   const progress = Math.min(pull / 56, 1)
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-40 flex justify-center"
+    <div aria-hidden className="glass-strong pointer-events-none fixed left-1/2 top-[env(safe-area-inset-top)] z-40 grid size-9 -translate-x-1/2 place-items-center rounded-full"
       style={{ transform: `translateY(${pull - 40}px)`, opacity: progress, transition: start.current === null ? 'transform .25s, opacity .25s' : 'none' }}>
-      <div className="glass-strong mt-[env(safe-area-inset-top)] grid size-9 place-items-center rounded-full">
-        {busy ? <Spinner className="size-4" /> : <Icon name="arrow" size={16} className="rotate-90 text-accent" />}
-      </div>
+      {busy ? <Spinner className="size-4" /> : <Icon name="arrow" size={16} className="rotate-90 text-accent" />}
     </div>
   )
 }
@@ -181,12 +179,18 @@ export function RoundButton({ children, onClick, label: aria, disabled }: { chil
   )
 }
 
+/**
+ * Floating header. The glass pane is itself a fixed element (blur is reliable there, where it is not for panes nested
+ * inside a positioned wrapper or for sticky ones); a spacer keeps its place in the page flow. The fade is separate.
+ */
 export function TopBar({ title, showBack = true, action }: { title: string; showBack?: boolean; action?: ReactNode }) {
   const nav = useNavigate()
   return (
-    <header className="pt-safe sticky top-0 z-30">
-      {/* the bar floats: inset from the edges, fully rounded, with the page scrolling beneath its frosted glass */}
-      <div className="glass-strong mx-4 mt-3 flex items-center gap-2 rounded-full p-1.5">
+    <>
+      <div aria-hidden className="h-[calc(4.75rem+env(safe-area-inset-top))] shrink-0" />
+      {/* content dissolves into the page as it passes under the bar */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#06070c]/90 via-[#06070c]/55 to-transparent" />
+      <header className="glass-strong fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 items-center gap-2 rounded-full p-1.5">
         <div className="w-10">
           {showBack && (
             <RoundButton label="Back" onClick={() => (window.history.state?.idx > 0 ? nav(-1) : nav('/', { replace: true }))}>
@@ -196,40 +200,107 @@ export function TopBar({ title, showBack = true, action }: { title: string; show
         </div>
         <h1 className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold">{title}</h1>
         <div className="flex w-10 justify-end">{action}</div>
-      </div>
-    </header>
+      </header>
+    </>
   )
 }
 
-/** Ambient light behind the whole app: slowly drifting colour orbs that the glass panes blur and refract. */
+/**
+ * Ambient light behind the whole app: drifting colour orbs, plus a dot grid, grain and a few crisp rings. The fine
+ * detail is what the glass panes frost over; on a smooth gradient alone their blur would be invisible.
+ */
 export function Backdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#0b0c18] via-[#080913] to-[#06070c]">
-      <div className="animate-drift-a absolute -left-28 -top-24 size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(255_196_48/0.34),transparent_65%)]" />
-      <div className="animate-drift-b absolute -right-40 top-[28%] size-[30rem] rounded-full bg-[radial-gradient(circle,rgb(124_92_255/0.38),transparent_65%)]" />
-      <div className="animate-drift-c absolute -bottom-32 left-[-4rem] size-[28rem] rounded-full bg-[radial-gradient(circle,rgb(34_211_190/0.26),transparent_65%)]" />
+      <div className="animate-drift-a absolute -left-28 -top-24 size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(255_196_48/0.36),transparent_65%)]" />
+      <div className="animate-drift-b absolute -right-40 top-[28%] size-[30rem] rounded-full bg-[radial-gradient(circle,rgb(124_92_255/0.40),transparent_65%)]" />
+      <div className="animate-drift-c absolute -bottom-32 left-[-4rem] size-[28rem] rounded-full bg-[radial-gradient(circle,rgb(34_211_190/0.28),transparent_65%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.16)_1px,transparent_1.6px)] [background-size:26px_26px] [mask-image:radial-gradient(ellipse_80%_70%_at_50%_45%,#000,transparent_85%)]" />
+      <div className="animate-drift-b absolute -right-16 top-24 size-72 rounded-full border border-white/[0.09]" />
+      <div className="animate-drift-a absolute -left-24 top-[46%] size-80 rounded-full border border-white/[0.07]" />
+      <div className="animate-drift-c absolute bottom-24 right-8 size-44 rounded-full border border-accent/[0.12]" />
+      <svg className="absolute inset-0 size-full opacity-[0.07] mix-blend-overlay">
+        <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" /></filter>
+        <rect width="100%" height="100%" filter="url(#grain)" />
+      </svg>
     </div>
   )
 }
 
-/** Floating bottom navigation: a frosted pill with a sliding highlight. */
+/**
+ * Shared behaviour of the horizontally scrolling tab rows: a highlight that slides to the active tab (measured, so
+ * tabs can be any width), the active tab scrolled into view, and edge fades while there is more to scroll to.
+ */
+function useScrollTabs(index: number, count: number) {
+  const scroller = useRef<HTMLDivElement>(null)
+  const items = useRef<(HTMLButtonElement | null)[]>([])
+  const [box, setBox] = useState({ left: 0, width: 0 })
+  const [edges, setEdges] = useState({ left: false, right: false })
+
+  const measure = useCallback(() => {
+    const el = items.current[index]
+    const sc = scroller.current
+    if (el) setBox({ left: el.offsetLeft, width: el.offsetWidth })
+    if (sc) setEdges({ left: sc.scrollLeft > 2, right: sc.scrollLeft + sc.clientWidth < sc.scrollWidth - 2 })
+  }, [index])
+
+  useLayoutEffect(measure, [measure, count])
+  useEffect(() => {
+    items.current[index]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+  }, [index])
+  useEffect(() => {
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [measure])
+
+  const fade = (e: { left: boolean; right: boolean }): CSSProperties => {
+    const mask = `linear-gradient(to right, ${e.left ? 'transparent' : '#000'} 0, #000 22px, #000 calc(100% - 22px), ${e.right ? 'transparent' : '#000'} 100%)`
+    return { WebkitMaskImage: mask, maskImage: mask }
+  }
+  return { scroller, items, box, onScroll: measure, style: fade(edges) }
+}
+
+/** Floating bottom navigation: a frosted pill with a sliding highlight. Scrolls sideways if it ever outgrows the screen. */
 export function Dock({ items, index, onChange }: { items: { label: string; icon: IconName }[]; index: number; onChange: (i: number) => void }) {
-  const W = 100
+  const t = useScrollTabs(index, items.length)
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-[480px] justify-center pb-[calc(1rem+env(safe-area-inset-bottom))]">
-      <div role="tablist" className="glass-strong pointer-events-auto relative flex rounded-full p-1.5">
-        <div aria-hidden className="absolute inset-y-1.5 rounded-full bg-white/[0.16] shadow-[inset_0_1px_0_rgb(255_255_255/0.3)] transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{ width: W, left: 6 + index * W }} />
-        {items.map((it, i) => (
-          <button type="button" key={it.label} role="tab" aria-selected={i === index} onClick={() => { tap(); onChange(i) }}
-            className={`relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 rounded-full text-[11px] font-semibold transition-colors duration-200 ${i === index ? 'text-accent' : 'text-muted'}`}
-            style={{ width: W }}>
-            <Icon name={it.icon} size={21} />
-            {it.label}
+    <>
+      {/* content dissolves into the page as it passes under the dock */}
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#06070c] via-[#06070c]/75 to-transparent" />
+      <nav className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full p-1.5">
+        <div ref={t.scroller} role="tablist" onScroll={t.onScroll} style={t.style} className="no-scrollbar relative flex snap-x overflow-x-auto rounded-full">
+          <div aria-hidden className="absolute inset-y-0 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            style={{ left: t.box.left, width: t.box.width }} />
+          {items.map((it, i) => (
+            <button type="button" key={it.label} role="tab" aria-selected={i === index} ref={(el) => { t.items.current[i] = el }}
+              onClick={() => { tap(); onChange(i) }}
+              className={`relative z-10 flex h-14 min-w-[6.25rem] shrink-0 snap-center flex-col items-center justify-center gap-0.5 rounded-full px-3 text-[11px] font-semibold transition-colors duration-200 ${i === index ? 'text-accent' : 'text-muted'}`}>
+              <Icon name={it.icon} size={21} />
+              {it.label}
+            </button>
+          ))}
+        </div>
+      </nav>
+    </>
+  )
+}
+
+export function PillTabs({ labels, index, onChange }: { labels: string[]; index: number; onChange: (i: number) => void }) {
+  const t = useScrollTabs(index, labels.length)
+  return (
+    <div className="glass-lite rounded-full p-1">
+      <div ref={t.scroller} role="tablist" onScroll={t.onScroll} style={t.style} className="no-scrollbar relative flex snap-x overflow-x-auto rounded-full">
+        <div aria-hidden className="btn-accent absolute inset-y-0 rounded-full transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ left: t.box.left, width: t.box.width }} />
+        {labels.map((l, i) => (
+          <button type="button" key={l} role="tab" aria-selected={i === index} ref={(el) => { t.items.current[i] = el }}
+            onClick={() => { tap(); onChange(i) }}
+            className={`relative z-10 min-w-[5.5rem] flex-1 shrink-0 snap-center whitespace-nowrap rounded-full px-4 py-2.5 text-[13.5px] font-bold transition-colors duration-200 ${i === index ? 'text-on-accent' : 'text-muted'}`}>
+            {l}
           </button>
         ))}
       </div>
-    </nav>
+    </div>
   )
 }
 
@@ -290,22 +361,6 @@ export function PillButton({ children, onClick, disabled, className = '' }: { ch
       className={`btn-accent inline-flex h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold disabled:bg-none disabled:bg-white/10 disabled:text-muted disabled:shadow-none ${className}`}>
       {children}
     </button>
-  )
-}
-
-export function PillTabs({ labels, index, onChange }: { labels: string[]; index: number; onChange: (i: number) => void }) {
-  const n = labels.length
-  return (
-    <div role="tablist" className="glass-lite relative flex rounded-full p-1">
-      <div aria-hidden className="btn-accent absolute inset-y-1 rounded-full transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-        style={{ width: `calc((100% - 8px) / ${n})`, left: `calc(4px + ${index} * (100% - 8px) / ${n})` }} />
-      {labels.map((l, i) => (
-        <button type="button" key={l} role="tab" aria-selected={i === index} onClick={() => { tap(); onChange(i) }}
-          className={`relative z-10 flex-1 rounded-full py-2.5 text-[13.5px] font-bold transition-colors duration-200 ${i === index ? 'text-on-accent' : 'text-muted'}`}>
-          {l}
-        </button>
-      ))}
-    </div>
   )
 }
 
@@ -375,21 +430,34 @@ export function BalanceText({ paise, owedLabel = 'you are owed', oweLabel = 'you
 const formatAbs = (p: number) => formatPaise(Math.abs(p))
 
 /* ---------- bottom sheet ---------- */
+/** A floating glass panel. It animates out as well as in: the last open contents are kept while it fades away. */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title?: string; children: ReactNode }) {
+  const [present, setPresent] = useState(open)
+  const last = useRef({ title, children })
+  if (open) last.current = { title, children }
+
+  useEffect(() => {
+    if (open) { setPresent(true); return }
+    const t = window.setTimeout(() => setPresent(false), 220)
+    return () => window.clearTimeout(t)
+  }, [open])
+
   useEffect(() => {
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
-  if (!open) return null
+
+  if (!open && !present) return null
+  const shown = last.current
   return createPortal(
-    <div className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-black/40 backdrop-blur-[3px]" onClick={onClose}>
+    <div className={`${open ? 'animate-fade' : 'animate-fade-out pointer-events-none'} fixed inset-0 z-50 flex items-end justify-center bg-black/45 backdrop-blur-[6px]`} onClick={onClose}>
       <div role="dialog" aria-modal onClick={(e) => e.stopPropagation()}
-        className="glass-strong animate-sheet mb-[max(0.75rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-[456px] rounded-[32px] px-5 pb-5 pt-3">
+        className={`${open ? 'animate-sheet' : 'animate-sheet-out'} glass-strong mb-[max(0.75rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-[456px] rounded-[32px] px-5 pb-5 pt-3`}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/25" />
-        {title && <h2 className="mb-4 whitespace-pre-line text-lg font-bold">{title}</h2>}
-        {children}
+        {shown.title && <h2 className="mb-4 whitespace-pre-line text-lg font-bold">{shown.title}</h2>}
+        {shown.children}
       </div>
     </div>,
     document.body,
@@ -407,8 +475,8 @@ export function OfflineBanner() {
   }, [])
   if (online) return null
   return (
-    <div role="alert" className="pt-safe animate-rise pointer-events-none fixed inset-x-0 top-0 z-[70]">
-      <div className="glass-strong mx-auto mt-3 w-fit max-w-[calc(100%-2rem)] rounded-full px-4 py-2 text-center text-[13px] font-semibold text-neg">You're offline · changes won't save</div>
+    <div role="alert" className="glass-strong animate-rise pointer-events-none fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-[70] w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full px-4 py-2 text-center text-[13px] font-semibold text-neg">
+      You're offline · changes won't save
     </div>
   )
 }

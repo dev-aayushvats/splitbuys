@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -16,6 +16,9 @@ export function GroupScreen() {
   const { toast, confirm } = useFeedback()
   const { data, error, loading, reload } = useAsync(() => api.groupData(id), [id])
   const [tab, setTab] = useState(0)
+  const direction = useRef(1) // which way the page slides in: forward when the new tab is to the right
+  const swipe = useRef<{ x: number; y: number } | null>(null)
+  const goTo = (i: number) => { if (i === tab) return; direction.current = i > tab ? 1 : -1; setTab(i) }
   const [menu, setMenu] = useState(false)
   const [renaming, setRenaming] = useState(false)
   const me = user!
@@ -50,13 +53,23 @@ export function GroupScreen() {
           value={mine === 0 ? 'Settled up' : formatPaise(Math.abs(mine))}
           valueClass={mine === 0 ? '' : mine > 0 ? 'text-pos' : 'text-neg'} />
       </div>
-      <main key={tab} className="animate-fade flex-1 px-5 pb-40 pt-5">
+      <main key={tab} className={`${direction.current > 0 ? 'animate-slide-fwd' : 'animate-slide-back'} flex-1 px-5 pb-40 pt-5`}
+        onTouchStart={(e) => { swipe.current = { x: e.touches[0].clientX, y: e.touches[0].clientY } }}
+        onTouchEnd={(e) => {
+          const s0 = swipe.current
+          swipe.current = null
+          if (!s0) return
+          const dx = e.changedTouches[0].clientX - s0.x
+          const dy = e.changedTouches[0].clientY - s0.y
+          // a deliberate sideways swipe moves between Expenses / Balances / Members
+          if (Math.abs(dx) > 64 && Math.abs(dx) > Math.abs(dy) * 1.6) goTo(Math.min(2, Math.max(0, tab + (dx < 0 ? 1 : -1))))
+        }}>
         {tab === 0 && <ExpensesTab data={data} me={me} onChanged={reload} />}
         {tab === 1 && <BalancesTab data={data} me={me} onChanged={reload} />}
         {tab === 2 && <MembersTab data={data} me={me} onChanged={reload} />}
       </main>
 
-      <Dock index={tab} onChange={setTab}
+      <Dock index={tab} onChange={goTo}
         items={[{ label: 'Expenses', icon: 'receipt' }, { label: 'Balances', icon: 'wallet' }, { label: 'Members', icon: 'groups' }]} />
 
       {/* the add button floats above the dock, on the right */}
@@ -193,7 +206,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
       {days.map((d) => (
         <section key={d.day}>
           <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{d.day}</h3>
-          <div className="space-y-3">{d.nodes}</div>
+          <div className="stagger space-y-3">{d.nodes}</div>
         </section>
       ))}
     </div>
@@ -260,7 +273,7 @@ function BalancesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
 
       <section>
         <SectionTitle>Balances</SectionTitle>
-        <div className="space-y-3">
+        <div className="stagger space-y-3">
           {data.balances.balances.map((b) => (
             <Tile key={b.user.id} leading={<Avatar user={b.user} size={46} />}
               title={b.user.id === me.id ? `${label(b.user)} (you)` : label(b.user)}
@@ -351,7 +364,7 @@ function MembersTab({ data, me, onChanged }: { data: GroupData; me: User; onChan
 
       <section>
         <SectionTitle>Members</SectionTitle>
-        <div className="space-y-3">
+        <div className="stagger space-y-3">
           {group.members.map((m) => (
             <Tile key={m.id} leading={<Avatar user={m} size={46} />} title={m.id === me.id ? `${label(m)} (you)` : label(m)}
               subtitle={m.name ? m.email : undefined}
