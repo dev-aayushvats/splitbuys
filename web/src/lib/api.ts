@@ -52,7 +52,10 @@ export const api = {
   createGroup: (name: string) => send<GroupDetail>('POST', '/groups', { name }),
   group: (id: number) => send<GroupDetail>('GET', `/groups/${id}`),
   regenerateInvite: (id: number) => send<GroupDetail>('POST', `/groups/${id}/invite/regenerate`),
+  renameGroup: (id: number, name: string) => send<GroupDetail>('PUT', `/groups/${id}`, { name }),
+  deleteGroup: (id: number) => send<void>('DELETE', `/groups/${id}`),
   leaveGroup: (id: number) => send<void>('DELETE', `/groups/${id}/members/me`),
+  removeMember: (id: number, memberId: number) => send<void>('DELETE', `/groups/${id}/members/${memberId}`),
 
   previewInvite: (t: string) => send<InvitePreview>('GET', `/invites/${t}`),
   joinInvite: (t: string) => send<GroupDetail>('POST', `/invites/${t}/join`),

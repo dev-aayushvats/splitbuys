@@ -2,8 +2,8 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { dayLabel, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
-import { label, type GroupData, type Transfer, type User } from '../lib/types'
+import { dayLabel, formatDate, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
+import { label, type Expense, type GroupData, type Transfer, type User } from '../lib/types'
 import {
   Avatar, AvatarStack, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, PillTabs, RoundButton, Screen,
   SectionTitle, Sheet, Skeleton, Tile, TopBar, tap, inputCls, useAsync, useFeedback,
@@ -17,6 +17,7 @@ export function GroupScreen() {
   const { data, error, loading, reload } = useAsync(() => api.groupData(id), [id])
   const [tab, setTab] = useState(0)
   const [menu, setMenu] = useState(false)
+  const [renaming, setRenaming] = useState(false)
   const me = user!
 
   const attempt = async (fn: () => Promise<void>) => {
@@ -57,7 +58,7 @@ export function GroupScreen() {
       <main key={tab} className="animate-fade flex-1 px-5 pb-28 pt-3">
         {tab === 0 && <ExpensesTab data={data} me={me} onChanged={reload} />}
         {tab === 1 && <BalancesTab data={data} me={me} onChanged={reload} />}
-        {tab === 2 && <MembersTab data={data} me={me} />}
+        {tab === 2 && <MembersTab data={data} me={me} onChanged={reload} />}
       </main>
 
       {tab === 0 && (
@@ -71,6 +72,7 @@ export function GroupScreen() {
 
       <Sheet open={menu} onClose={() => setMenu(false)}>
         <div className="space-y-3">
+          <button className="w-full rounded-full border border-line py-3.5 font-semibold" onClick={() => { setMenu(false); setRenaming(true) }}>Rename group</button>
           <button className="w-full rounded-full border border-line py-3.5 font-semibold" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Reset invite link?\nThe current link will stop working.', 'Reset'))) return
@@ -81,9 +83,44 @@ export function GroupScreen() {
             if (!(await confirm('Leave this group?', 'Leave'))) return
             await attempt(async () => { await api.leaveGroup(id); nav('/', { replace: true }) })
           }}>Leave group</button>
+          {data.group.members.length === 1 && (
+            <button className="w-full rounded-full border border-neg/40 py-3.5 font-semibold text-neg" onClick={async () => {
+              setMenu(false)
+              if (!(await confirm('Delete this group?\nAll its expenses and payments will be erased.', 'Delete'))) return
+              await attempt(async () => { await api.deleteGroup(id); nav('/', { replace: true }) })
+            }}>Delete group</button>
+          )}
         </div>
       </Sheet>
+
+      <RenameSheet open={renaming} current={data.group.name} onClose={() => setRenaming(false)} onSave={(name) => attempt(async () => {
+        await api.renameGroup(id, name)
+        setRenaming(false)
+        reload()
+      })} />
     </Screen>
+  )
+}
+
+function RenameSheet({ open, current, onClose, onSave }: { open: boolean; current: string; onClose: () => void; onSave: (name: string) => Promise<void> }) {
+  const [name, setName] = useState(current)
+  const [busy, setBusy] = useState(false)
+  const changed = name.trim() !== '' && name.trim() !== current
+  return (
+    <Sheet open={open} onClose={onClose} title="Rename group">
+      <form className="space-y-4" onSubmit={async (e) => {
+        e.preventDefault()
+        if (!changed) return
+        setBusy(true)
+        await onSave(name.trim())
+        setBusy(false)
+      }}>
+        <Field label="Group name">
+          <input className={inputCls} autoFocus autoCapitalize="words" value={name} onChange={(e) => setName(e.target.value)} />
+        </Field>
+        <button type="submit" disabled={!changed || busy} className="h-13 w-full rounded-full bg-accent py-3.5 font-bold text-on-accent disabled:bg-high disabled:text-muted">Save</button>
+      </form>
+    </Sheet>
   )
 }
 
@@ -94,6 +131,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
   const nav = useNavigate()
   const { toast, confirm } = useFeedback()
   const gid = data.group.id
+  const [detail, setDetail] = useState<Expense | null>(null)
 
   const items = [
     ...data.expenses.map((e) => ({ at: e.createdAt, node: expenseTile(e) })),
@@ -118,7 +156,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
       <Tile key={`e${e.id}`} leading={<IconBadge icon="receipt" />} title={e.description}
         subtitle={`${who(e.payer, me)} paid ${formatPaise(e.amountPaise)}`}
         trailing={<div className={`whitespace-pre-line text-right text-[13px] font-bold ${cls}`}>{note}</div>}
-        onClick={() => nav(`/groups/${gid}/expense/${e.id}`)} />
+        onClick={() => setDetail(e)} />
     )
   }
 
@@ -146,6 +184,13 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
   }
   return (
     <div className="space-y-5">
+      <ExpenseDetail expense={detail} me={me}
+        onClose={() => setDetail(null)}
+        onEdit={(e) => nav(`/groups/${gid}/expense/${e.id}`)}
+        onDelete={async (e) => {
+          if (!(await confirm('Delete this expense?'))) return
+          try { await api.deleteExpense(gid, e.id); setDetail(null); onChanged() } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
+        }} />
       {days.map((d) => (
         <section key={d.day}>
           <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{d.day}</h3>
@@ -153,6 +198,44 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
         </section>
       ))}
     </div>
+  )
+}
+
+const SPLIT_LABEL = { EQUAL: 'Split equally', EXACT: 'Split by exact amounts', PERCENT: 'Split by percentage', SHARES: 'Split by shares' } as const
+
+function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
+  expense: Expense | null; me: User; onClose: () => void; onEdit: (e: Expense) => void; onDelete: (e: Expense) => void
+}) {
+  return (
+    <Sheet open={!!e} onClose={onClose} title={e?.description}>
+      {e && (
+        <div className="space-y-4">
+          <div>
+            <div className="text-3xl font-extrabold">{formatPaise(e.amountPaise)}</div>
+            <div className="mt-1 text-[13px] text-muted">
+              {who(e.payer, me)} paid · {formatDate(e.createdAt)}
+              {e.createdBy.id !== e.payer.id && ` · added by ${who(e.createdBy, me)}`}
+            </div>
+          </div>
+          <div>
+            <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{SPLIT_LABEL[e.splitType]}</div>
+            <div className="max-h-[40dvh] space-y-2 overflow-y-auto">
+              {e.shares.map((sh) => (
+                <div key={sh.user.id} className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-2.5">
+                  <Avatar user={sh.user} size={32} />
+                  <span className="min-w-0 flex-1 truncate font-medium">{sh.user.id === me.id ? `${label(sh.user)} (you)` : label(sh.user)}</span>
+                  <span className="font-bold">{formatPaise(sh.amountPaise)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <button type="button" onClick={() => onDelete(e)} className="flex-1 rounded-full border border-line py-3.5 font-semibold text-neg">Delete</button>
+            <button type="button" onClick={() => onEdit(e)} className="flex-1 rounded-full bg-accent py-3.5 font-bold text-on-accent">Edit</button>
+          </div>
+        </div>
+      )}
+    </Sheet>
   )
 }
 
@@ -240,8 +323,8 @@ function PaymentForm({ transfer, onSubmit }: { transfer: Transfer; onSubmit: (pa
 }
 
 /* ---------- members ---------- */
-function MembersTab({ data, me }: { data: GroupData; me: User }) {
-  const { toast } = useFeedback()
+function MembersTab({ data, me, onChanged }: { data: GroupData; me: User; onChanged: () => void }) {
+  const { toast, confirm } = useFeedback()
   const { group } = data
   const link = `${window.location.origin}/join/${group.inviteToken}`
 
@@ -272,7 +355,11 @@ function MembersTab({ data, me }: { data: GroupData; me: User }) {
         <div className="space-y-3">
           {group.members.map((m) => (
             <Tile key={m.id} leading={<Avatar user={m} size={46} />} title={m.id === me.id ? `${label(m)} (you)` : label(m)}
-              subtitle={m.name ? m.email : undefined} />
+              subtitle={m.name ? m.email : undefined}
+              onClick={m.id === me.id ? undefined : async () => {
+                if (!(await confirm(`Remove ${label(m)} from this group?\nThey must be settled up first.`, 'Remove'))) return
+                try { await api.removeMember(group.id, m.id); toast(`${label(m)} removed`); onChanged() } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
+              }} />
           ))}
         </div>
       </section>

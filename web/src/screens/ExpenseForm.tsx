@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
-import { label, type Expense, type GroupDetail, type SplitInput, type SplitType, type User } from '../lib/types'
+import { hundredthsToInput, parseHundredths } from '../lib/money'
+import { evaluateSplit } from '../lib/splits'
+import { label, type Expense, type GroupDetail, type SplitType, type User } from '../lib/types'
 import {
   Avatar, ConfirmButton, Dashed, ErrorRetry, Field, Icon, PillTabs, RoundButton, Screen, SectionTitle, Spinner, TopBar,
   inputCls, tap, useAsync, useFeedback,
@@ -44,7 +45,10 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   const { user } = useAuth()
   const { toast, confirm } = useFeedback()
   const me = user!
-  const members = group.members
+  const members = useMemo(
+    () => [...group.members].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id)),
+    [group.members, me.id],
+  )
 
   const [description, setDescription] = useState(expense?.description ?? '')
   const [amount, setAmount] = useState(expense ? hundredthsToInput(expense.amountPaise) : '')
@@ -65,47 +69,11 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
 
   const nameOf = (id: number) => label(members.find((m) => m.id === id)!)
 
-  const result = useMemo((): { splits?: SplitInput[]; problem?: string; hint?: string } => {
-    const total = parseHundredths(amount)
-    if (!description.trim()) return { problem: 'Add a description' }
-    if (total === null || total <= 0) return { problem: 'Enter a valid amount' }
-    if (selected.size === 0) return { problem: 'Pick at least one person' }
-    const ids = members.map((m) => m.id).filter((id) => selected.has(id))
-
-    if (kind === 'EQUAL') return { splits: ids.map((userId) => ({ userId })), hint: `${formatPaise(Math.floor(total / ids.length))} each` }
-
-    if (kind === 'SHARES') {
-      const weights: Record<number, number> = {}
-      for (const id of ids) {
-        const t = (values[id] ?? '').trim()
-        const w = t === '' ? 1 : /^\d+$/.test(t) ? parseInt(t, 10) : NaN
-        if (Number.isNaN(w)) return { problem: 'Shares must be whole numbers' }
-        weights[id] = w
-      }
-      if (Object.values(weights).every((w) => w === 0)) return { problem: 'At least one share must be above zero' }
-      return { splits: ids.map((userId) => ({ userId, value: weights[userId] })), hint: 'Empty fields count as 1 share' }
-    }
-
-    const isPercent = kind === 'PERCENT'
-    const amounts: Record<number, number> = {}
-    for (const id of ids) {
-      const t = (values[id] ?? '').trim()
-      const v = t === '' ? 0 : parseHundredths(t)
-      if (v === null) return { problem: `Check the number for ${nameOf(id)}` }
-      amounts[id] = v
-    }
-    const sum = Object.values(amounts).reduce((a, b) => a + b, 0)
-    const diff = (isPercent ? 10000 : total) - sum
-    if (diff !== 0) {
-      const left = isPercent ? `${hundredthsToInput(Math.abs(diff))}%` : formatPaise(Math.abs(diff))
-      return { problem: diff > 0 ? `${left} left to assign` : `Over by ${left}` }
-    }
-    return {
-      splits: ids.map((userId) => ({ userId, value: isPercent ? amounts[userId] / 100 : amounts[userId] })),
-      hint: isPercent ? 'Adds up to 100%' : `Adds up to ${formatPaise(total)}`,
-    }
+  const result = useMemo(
+    () => evaluateSplit({ amount, description, kind, ids: members.map((m) => m.id).filter((id) => selected.has(id)), values, nameOf }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [amount, description, selected, kind, values, members])
+    [amount, description, selected, kind, values, members],
+  )
 
   function pickKind(k: SplitType) {
     if (k === kind) return

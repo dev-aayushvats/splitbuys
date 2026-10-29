@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { formatPaise } from './lib/money'
 import { label, type User } from './lib/types'
@@ -348,7 +349,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
   if (!open) return null
-  return (
+  return createPortal(
     <div className="animate-fade fixed inset-0 z-50 flex items-end justify-center bg-black/60" onClick={onClose}>
       <div role="dialog" aria-modal onClick={(e) => e.stopPropagation()}
         className="animate-sheet pb-safe w-full max-w-[480px] rounded-t-[28px] border-t border-line bg-high px-5 pb-5 pt-3">
@@ -356,6 +357,24 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
         {title && <h2 className="mb-4 whitespace-pre-line text-lg font-bold">{title}</h2>}
         {children}
       </div>
+    </div>,
+    document.body,
+  )
+}
+
+/* ---------- connectivity ---------- */
+export function OfflineBanner() {
+  const [online, setOnline] = useState(() => navigator.onLine)
+  useEffect(() => {
+    const on = () => setOnline(true), off = () => setOnline(false)
+    window.addEventListener('online', on)
+    window.addEventListener('offline', off)
+    return () => { window.removeEventListener('online', on); window.removeEventListener('offline', off) }
+  }, [])
+  if (online) return null
+  return (
+    <div role="alert" className="pt-safe animate-fade fixed inset-x-0 top-0 z-[70] bg-neg text-on-accent">
+      <div className="mx-auto max-w-[480px] px-5 py-1.5 text-center text-[13px] font-semibold">You're offline · changes won't save</div>
     </div>
   )
 }

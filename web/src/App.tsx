@@ -1,6 +1,6 @@
 import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './lib/auth'
-import { Screen, Spinner } from './ui'
+import { OfflineBanner, Screen, Spinner } from './ui'
 import { GroupsScreen } from './screens/Groups'
 import { GroupScreen } from './screens/Group'
 import { JoinScreen } from './screens/Join'
@@ -28,6 +28,8 @@ function Gate({ page }: { page: 'login' | 'name' | 'app' }) {
 
 export function App() {
   return (
+    <>
+    <OfflineBanner />
     <Routes>
       <Route element={<Gate page="login" />}><Route path="/login" element={<LoginScreen />} /></Route>
       <Route element={<Gate page="name" />}><Route path="/name" element={<NameScreen />} /></Route>
@@ -41,5 +43,6 @@ export function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </>
   )
 }
