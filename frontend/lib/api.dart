@@ -22,7 +22,7 @@ class ApiClient {
   void Function()? onUnauthorized;
 
   Future<dynamic> _send(String method, String path, [Object? body]) async {
-    final request = http.Request(method, Uri.parse('$apiBaseUrl/api$path'));
+    final request = http.Request(method, Uri.parse('$apiBaseUrl/api/v1$path'));
     request.headers['Content-Type'] = 'application/json';
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
     if (body != null) request.body = jsonEncode(body);
@@ -38,7 +38,7 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) return decoded;
 
     if (response.statusCode == 401 && token != null) onUnauthorized?.call();
-    final message = decoded is Map && decoded['error'] is String ? decoded['error'] as String : 'Something went wrong';
+    final message = decoded is Map && decoded['detail'] is String ? decoded['detail'] as String : 'Something went wrong';
     throw ApiException(message, response.statusCode);
   }
 

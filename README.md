@@ -25,6 +25,10 @@ flutter run -d chrome --web-port 5555 --dart-define-from-file=env/dev.json
 ```
 Android emulator: the API defaults to `http://10.0.2.2:8080`.
 
+## Backend architecture
+Package-by-feature (`user`, `auth`, `group`, `ledger`, `common`) with the layering and rules enforced by tests — see
+[backend/ARCHITECTURE.md](backend/ARCHITECTURE.md). API is under `/api/v1`; run `./mvnw test` in `backend/`.
+
 ## Config
 All backend settings are environment variables, listed in `backend/.env.example`. Real env vars override `.env`.
 Frontend values (`API_URL`, `APP_URL`) are build-time `--dart-define`s and are not secret.

@@ -26,7 +26,7 @@ export function setToken(t: string | null) {
 async function send<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`${API_URL}/api${path}`, {
+    res = await fetch(`${API_URL}/api/v1${path}`, {
       method,
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
@@ -38,7 +38,9 @@ async function send<T = unknown>(method: string, path: string, body?: unknown): 
   const data = text ? JSON.parse(text) : null
   if (res.ok) return data as T
   if (res.status === 401 && token) onUnauthorized?.()
-  throw new ApiError(typeof data?.error === 'string' ? data.error : 'Something went wrong', res.status)
+  // RFC 9457 problem document: `detail` is the user-facing message (`error` is kept for older servers)
+  const message = [data?.detail, data?.error].find((m) => typeof m === 'string')
+  throw new ApiError(message ?? 'Something went wrong', res.status)
 }
 
 export const api = {
