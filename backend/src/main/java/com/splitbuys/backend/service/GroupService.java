@@ -95,12 +95,49 @@ public class GroupService {
         return detail(g);
     }
 
-    public void leave(long groupId, long userId) {
+    public GroupDetail rename(long groupId, long userId, String name) {
         ExpenseGroup g = requireMemberGroup(groupId, userId);
-        if (netBalances(g).getOrDefault(userId, 0L) != 0) {
-            throw ApiException.badRequest("Settle up your balance before leaving the group");
+        g.name = name.trim();
+        return detail(g);
+    }
+
+    public void leave(long groupId, long userId) {
+        removeMember(groupId, userId, userId);
+    }
+
+    /**
+     * Removes a member who has no outstanding balance. Any member may remove another (friend groups have no owner).
+     * When the last member goes, the group and its history go with them.
+     */
+    public void removeMember(long groupId, long actorId, long targetId) {
+        ExpenseGroup g = requireMemberGroup(groupId, actorId);
+        if (!g.hasMember(targetId)) {
+            throw ApiException.notFound("Member not found");
         }
-        g.members.removeIf(u -> u.id == userId);
+        if (netBalances(g).getOrDefault(targetId, 0L) != 0) {
+            throw ApiException.badRequest(actorId == targetId
+                    ? "Settle up your balance before leaving the group"
+                    : "Settle up their balance before removing them from the group");
+        }
+        g.members.removeIf(u -> u.id == targetId);
+        if (g.members.isEmpty()) {
+            purge(g);
+        }
+    }
+
+    /** Deleting a group erases its expenses and payments, so it is only allowed for a sole remaining member. */
+    public void delete(long groupId, long userId) {
+        ExpenseGroup g = requireMemberGroup(groupId, userId);
+        if (g.members.size() > 1) {
+            throw ApiException.badRequest("Remove the other members first, or just leave the group");
+        }
+        purge(g);
+    }
+
+    private void purge(ExpenseGroup g) {
+        expenses.deleteAll(expenses.findByGroupIdOrderByCreatedAtDescIdDesc(g.id));
+        settlements.deleteAll(settlements.findByGroupIdOrderByCreatedAtDescIdDesc(g.id));
+        groups.delete(g);
     }
 
     @Transactional(readOnly = true)

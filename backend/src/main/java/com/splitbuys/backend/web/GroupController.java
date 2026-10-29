@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -52,6 +53,25 @@ public class GroupController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void leave(@RequestAttribute(AuthInterceptor.USER_ID) long userId, @PathVariable long id) {
         groups.leave(id, userId);
+    }
+
+    @PutMapping("/api/groups/{id}")
+    GroupDetail rename(@RequestAttribute(AuthInterceptor.USER_ID) long userId, @PathVariable long id,
+                       @Valid @RequestBody GroupRequest req) {
+        return groups.rename(id, userId, req.name());
+    }
+
+    @DeleteMapping("/api/groups/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void delete(@RequestAttribute(AuthInterceptor.USER_ID) long userId, @PathVariable long id) {
+        groups.delete(id, userId);
+    }
+
+    @DeleteMapping("/api/groups/{id}/members/{memberId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void removeMember(@RequestAttribute(AuthInterceptor.USER_ID) long userId, @PathVariable long id,
+                      @PathVariable long memberId) {
+        groups.removeMember(id, userId, memberId);
     }
 
     @GetMapping("/api/groups/{id}/balances")
