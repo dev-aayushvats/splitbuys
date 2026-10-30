@@ -2,7 +2,9 @@ import type {
   Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Settlement, User,
 } from './types'
 
-export const API_URL: string = import.meta.env.VITE_API_URL || 'http://localhost:8080'
+// Unset (dev): the local backend. Set to an empty string (the Docker image does this): same origin, i.e. calls go to /api on
+// whichever host served the app, where a reverse proxy forwards them to the backend.
+export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
 
 export class ApiError extends Error {
   status?: number

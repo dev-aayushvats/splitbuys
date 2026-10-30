@@ -1,0 +1,41 @@
+# Brings up the whole app:   docker compose up --build        (then open http://localhost:5555)
+#
+#   web      nginx serving the PWA and proxying /api to the backend   -> http://localhost:${WEB_PORT:-5555}
+#   backend  the Spring Boot API, configured from backend/.env        -> http://127.0.0.1:8080 (this machine only)
+#
+# The backend reads backend/.env (database, mail, JWT secret, admin token), the same file used when running it directly.
+# Admin endpoints such as backups are NOT exposed through the web container; call them on 127.0.0.1:8080 with X-Admin-Token.
+name: splitbuys
+
+services:
+  backend:
+    build: ./backend
+    image: splitbuys-backend
+    env_file: ./backend/.env
+    environment:
+      # postgres = the DATABASE_* settings in backend/.env (Neon). Use "prod,postgres" in production, or unset it
+      # (with no DATABASE_URL in backend/.env) to run on a SQLite file in the data volume.
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-postgres}
+      CORS_ALLOWED_ORIGINS: ${PUBLIC_URL:-http://localhost:5555}
+      BACKUP_DIR: /data/backups
+    volumes:
+      - backend-data:/data
+    ports:
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+  web:
+    build:
+      context: ./web
+      args:
+        VITE_API_URL: ""      # same origin: nginx forwards /api to the backend
+    image: splitbuys-web
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${WEB_PORT:-5555}:8080"
+    restart: unless-stopped
+
+volumes:
+  backend-data:               # backups (and the SQLite file, if used) live here and survive `docker compose down`
