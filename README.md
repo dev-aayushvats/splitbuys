@@ -19,7 +19,7 @@ https://myaccount.google.com/apppasswords, then in `.env` set `MAIL_ENABLED=true
 
 **Web app** (see below): `cd web && npm install && npm run dev` → http://localhost:5555
 
-**PostgreSQL / Neon:** the backend uses a local SQLite file by default. To use Neon, set `SPRING_PROFILES_ACTIVE=postgres` and
+**PostgreSQL / Neon:** the backend uses a local SQLite file by default. To use Neon, set `spring.profiles.active=postgres` (in `.env`; `SPRING_PROFILES_ACTIVE` if it is a real environment variable) and
 the `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` values described in `backend/.env.example`; the schema is
 created automatically on first start.
 
