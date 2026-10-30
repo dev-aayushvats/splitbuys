@@ -45,11 +45,14 @@ With `SPRING_PROFILES_ACTIVE=prod` the app refuses to start unless real email is
 
 ## Data
 
-Flyway owns the schema (`src/main/resources/db/migration`); Hibernate never alters it. `V1` baselines the original
+Flyway owns the schema, with one migration folder per database (`db/migration/sqlite`, `db/migration/postgresql`); Hibernate never alters it. `V1` baselines the original
 schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns.
 Concurrent edits to a group or expense are rejected with 409 instead of silently overwriting. Balances are computed
-with four aggregate queries however many groups are listed. Set `JPA_DDL_AUTO=validate` on PostgreSQL (SQLite's
-`INTEGER` keys trip Hibernate's validator).
+with four aggregate queries however many groups are listed. SQLite is the local default. PostgreSQL (Neon) is selected with
+`SPRING_PROFILES_ACTIVE=postgres` (see `.env.example`); that profile turns on Hibernate schema validation (SQLite's
+`INTEGER` keys trip the validator, so it is off there), tunes the pool for Neon's suspend/resume, and can migrate over a
+direct connection while the app uses the pooled one. The auth, group and ledger API tests also run against a real
+in-process PostgreSQL (`Postgres*ApiTest`), so both migration sets and the queries are exercised on every build.
 
 ## API
 

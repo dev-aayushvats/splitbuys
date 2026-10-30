@@ -64,7 +64,16 @@
 			<artifactId>spring-boot-starter-flyway</artifactId>
 		</dependency>
 
-		<!-- Database driver + Hibernate dialect. To switch databases, replace these two and set DATABASE_* env vars. -->
+		<!-- Database drivers. SQLite is the local default; PostgreSQL (e.g. Neon) is selected with SPRING_PROFILES_ACTIVE=postgres. -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.flywaydb</groupId>
+			<artifactId>flyway-database-postgresql</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.xerial</groupId>
 			<artifactId>sqlite-jdbc</artifactId>
@@ -93,6 +102,13 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-security-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<!-- a real PostgreSQL started in-process (no Docker) so the Postgres migrations and queries are tested for real -->
+		<dependency>
+			<groupId>io.zonky.test</groupId>
+			<artifactId>embedded-postgres</artifactId>
+			<version>2.1.0</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>

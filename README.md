@@ -19,6 +19,10 @@ https://myaccount.google.com/apppasswords, then in `.env` set `MAIL_ENABLED=true
 
 **Web app** (see below): `cd web && npm install && npm run dev` → http://localhost:5555
 
+**PostgreSQL / Neon:** the backend uses a local SQLite file by default. To use Neon, set `SPRING_PROFILES_ACTIVE=postgres` and
+the `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` values described in `backend/.env.example`; the schema is
+created automatically on first start.
+
 ## Backend architecture
 Package-by-feature (`user`, `auth`, `group`, `ledger`, `common`) with the layering and rules enforced by tests — see
 [backend/ARCHITECTURE.md](backend/ARCHITECTURE.md). API is under `/api/v1`; run `./mvnw test` in `backend/`.
