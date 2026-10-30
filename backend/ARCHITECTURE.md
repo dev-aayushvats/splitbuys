@@ -14,6 +14,7 @@ com.splitbuys.backend
 ├── auth/            email OTP + access tokens
 ├── group/           groups, membership, invites          declares LedgerPort
 ├── ledger/          expenses, payments, balances         implements group.LedgerPort
+├── backup/          database backups (PostgreSQL) and restore, behind the admin token
 └── split/           pure split / debt-simplification maths (no framework imports)
 ```
 
@@ -53,6 +54,23 @@ with four aggregate queries however many groups are listed. SQLite is the local 
 `INTEGER` keys trip the validator, so it is off there), tunes the pool for Neon's suspend/resume, and can migrate over a
 direct connection while the app uses the pooled one. The auth, group and ledger API tests also run against a real
 in-process PostgreSQL (`Postgres*ApiTest`), so both migration sets and the queries are exercised on every build.
+
+## Backups
+
+`POST /api/v1/admin/backups` writes a gzip'd, `psql`-loadable data dump to `BACKUP_DIR` (`GET` lists them). It uses
+PostgreSQL's COPY protocol inside one read-only `REPEATABLE READ` transaction (a consistent snapshot, no `pg_dump`
+binary needed), keeps the newest `BACKUP_KEEP`, and writes files owner-only. Sign-in codes are not included. The endpoint
+requires `X-Admin-Token` = `ADMIN_API_TOKEN` (a separate shared secret; unset means the endpoint returns 404).
+
+Restore is deliberately **not** an HTTP endpoint: it needs shell access. Stop other instances, then:
+
+```
+java -jar app.jar --app.restore.file=data/backups/splitbuys-<timestamp>.sql.gz --app.restore.confirm=true --server.port=0
+```
+
+It refuses incomplete files and a schema-version mismatch, takes a `pre-restore` safety backup if there is data to
+replace, and runs in one transaction (all or nothing). Backups on the app server's disk do not survive losing that disk;
+for real disaster recovery copy them off-box (and Neon's own point-in-time restore covers the database itself).
 
 ## API
 

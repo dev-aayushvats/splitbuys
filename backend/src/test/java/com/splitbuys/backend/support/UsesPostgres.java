@@ -12,6 +12,7 @@ import org.springframework.test.context.ContextConfiguration;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest(properties = {
+        "APP_ENV_FILE=target/no-such-local.env", // tests never read the developer's real .env (it may point at a real database)
         "app.jwt.secret=integration-test-secret-integration-test-secret",
         "app.rate-limit.auth-per-minute=100000"})
 @ActiveProfiles("postgres")

@@ -30,7 +30,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Stateless bearer-token API: JWTs are validated by Spring Security's resource server (HS256), everything except the
- * auth endpoints and health needs a valid token, and unauthenticated paths are rate limited.
+ * auth endpoints and health needs a valid token, and unauthenticated paths are rate limited. The admin endpoints
+ * use their own shared-secret token instead (see {@link AdminTokenFilter}).
  */
 @Configuration
 @EnableWebSecurity
@@ -62,7 +63,11 @@ public class SecurityConfig implements WebMvcConfigurer {
 
     @Bean
     SecurityFilterChain apiSecurity(HttpSecurity http, Clock clock,
-                                    @Value("${app.rate-limit.auth-per-minute}") int authPerMinute) throws Exception {
+                                    @Value("${app.rate-limit.auth-per-minute}") int authPerMinute,
+                                    @Value("${app.admin.token:}") String adminToken) throws Exception {
+        if (!adminToken.isEmpty() && adminToken.length() < MIN_SECRET_LENGTH) {
+            throw new IllegalStateException("ADMIN_API_TOKEN must be at least " + MIN_SECRET_LENGTH + " characters (or unset)");
+        }
         ProblemAuthenticationEntryPoint problems = new ProblemAuthenticationEntryPoint();
         http
                 .csrf(csrf -> csrf.disable()) // no cookies: the bearer token is not sent automatically by browsers
@@ -72,6 +77,7 @@ public class SecurityConfig implements WebMvcConfigurer {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .oauth2ResourceServer(o -> o.jwt(Customizer.withDefaults())
                         .authenticationEntryPoint(problems).accessDeniedHandler(problems))
@@ -79,7 +85,8 @@ public class SecurityConfig implements WebMvcConfigurer {
                 .headers(h -> h
                         .frameOptions(f -> f.deny())
                         .referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
-                .addFilterBefore(new RateLimitFilter(authPerMinute, clock), BearerTokenAuthenticationFilter.class);
+                .addFilterBefore(new RateLimitFilter(authPerMinute, clock), BearerTokenAuthenticationFilter.class)
+                .addFilterBefore(new AdminTokenFilter(adminToken), BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 

@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * Fixed-window, per-client-IP limit on the unauthenticated auth endpoints. Per-process and in-memory, which is right
+ * Fixed-window, per-client-IP limit on the endpoints reachable without a user session (sign-in and admin). Per-process and in-memory, which is right
  * for a single instance; put it in front (gateway / Redis) when scaling out.
  */
 class RateLimitFilter extends OncePerRequestFilter {
@@ -33,7 +33,8 @@ class RateLimitFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !request.getRequestURI().startsWith("/api/v1/auth/");
+        String uri = request.getRequestURI();
+        return !uri.startsWith("/api/v1/auth/") && !uri.startsWith(AdminTokenFilter.PREFIX);
     }
 
     @Override

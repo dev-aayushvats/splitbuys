@@ -25,6 +25,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 /** Full-stack HTTP tests: real security chain, real database (migrated by Flyway), mail captured instead of sent. */
 @SpringBootTest(properties = {
+        "APP_ENV_FILE=target/no-such-local.env", // tests never read the developer's real .env (it may point at a real database)
         "spring.datasource.url=jdbc:sqlite:target/it.db?foreign_keys=on",
         "app.jwt.secret=integration-test-secret-integration-test-secret",
         "app.rate-limit.auth-per-minute=100000"})

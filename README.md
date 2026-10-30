@@ -23,6 +23,10 @@ https://myaccount.google.com/apppasswords, then in `.env` set `MAIL_ENABLED=true
 the `DATABASE_URL` / `DATABASE_USERNAME` / `DATABASE_PASSWORD` values described in `backend/.env.example`; the schema is
 created automatically on first start.
 
+**Database backups (PostgreSQL):** set `ADMIN_API_TOKEN` in `backend/.env`, then
+`curl -X POST -H "X-Admin-Token: $TOKEN" http://localhost:8080/api/v1/admin/backups` writes a dump to `backend/data/backups/`.
+Restore is a command-line operation; see [backend/ARCHITECTURE.md](backend/ARCHITECTURE.md#backups).
+
 ## Backend architecture
 Package-by-feature (`user`, `auth`, `group`, `ledger`, `common`) with the layering and rules enforced by tests — see
 [backend/ARCHITECTURE.md](backend/ARCHITECTURE.md). API is under `/api/v1`; run `./mvnw test` in `backend/`.
