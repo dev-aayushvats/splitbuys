@@ -14,7 +14,7 @@ export function JoinScreen() {
   if (error || !p) {
     return (
       <AuthPage title="Invite not found" subtitle={error instanceof Error ? error.message : undefined}>
-        <button onClick={() => nav('/', { replace: true })} className="h-13 w-full rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold">Go to my groups</button>
+        <button onClick={() => nav('/', { replace: true })} className="h-13 w-full rounded-full glass-btn py-3.5 font-semibold">Go to my groups</button>
       </AuthPage>
     )
   }

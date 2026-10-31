@@ -65,7 +65,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
       )}
       <Sheet open={!!ask} onClose={() => close(false)} title={ask?.title}>
         <div className="flex gap-3">
-          <button type="button" className="h-13 flex-1 rounded-full border border-line bg-white/[0.06] py-3.5 font-semibold" onClick={() => close(false)}>Cancel</button>
+          <button type="button" className="h-13 flex-1 rounded-full glass-btn py-3.5 font-semibold" onClick={() => close(false)}>Cancel</button>
           <button type="button" className="h-13 flex-1 rounded-full bg-neg py-3.5 font-bold text-on-accent shadow-[0_10px_28px_-8px_rgb(255_90_90/0.6),inset_0_1px_0_rgb(255_255_255/0.4)]" onClick={() => close(true)}>{ask?.action}</button>
         </div>
       </Sheet>
@@ -173,7 +173,7 @@ export const Dashed = ({ children, className = 'p-4' }: { children: ReactNode; c
 export function RoundButton({ children, onClick, label: aria, disabled }: { children: ReactNode; onClick?: () => void; label: string; disabled?: boolean }) {
   return (
     <button type="button" aria-label={aria} onClick={onClick} disabled={disabled}
-      className="grid size-10 place-items-center rounded-full bg-white/10 transition-colors active:bg-white/20 disabled:text-muted">
+      className="glass-btn grid size-11 place-items-center rounded-full disabled:text-muted">
       {children}
     </button>
   )
@@ -183,23 +183,61 @@ export function RoundButton({ children, onClick, label: aria, disabled }: { chil
  * Floating header. The glass pane is itself a fixed element (blur is reliable there, where it is not for panes nested
  * inside a positioned wrapper or for sticky ones); a spacer keeps its place in the page flow. The fade is separate.
  */
-export function TopBar({ title, showBack = true, action }: { title: string; showBack?: boolean; action?: ReactNode }) {
+/** Back one step, or home when the app was opened straight onto this page. */
+export function useGoBack() {
   const nav = useNavigate()
+  return useCallback(() => (window.history.state?.idx > 0 ? nav(-1) : nav('/', { replace: true })), [nav])
+}
+
+/** Installed iOS apps have no back swipe, so drag in from the left edge to go back (reachable with one thumb). */
+function useEdgeSwipeBack(enabled: boolean) {
+  const back = useGoBack()
+  useEffect(() => {
+    if (!enabled) return
+    let start: { x: number; y: number } | null = null
+    const down = (e: TouchEvent) => { const t = e.touches[0]; start = t.clientX <= 24 ? { x: t.clientX, y: t.clientY } : null }
+    const up = (e: TouchEvent) => {
+      if (!start) return
+      const t = e.changedTouches[0]
+      const dx = t.clientX - start.x, dy = t.clientY - start.y
+      start = null
+      if (dx > 80 && dx > Math.abs(dy) * 2) { tap(); back() }
+    }
+    window.addEventListener('touchstart', down, { passive: true })
+    window.addEventListener('touchend', up, { passive: true })
+    return () => { window.removeEventListener('touchstart', down); window.removeEventListener('touchend', up) }
+  }, [enabled, back])
+}
+
+/** Thumb-reach back button for the bottom of the screen, next to the dock. */
+export function BackFab() {
+  const back = useGoBack()
+  return (
+    <button type="button" aria-label="Back" onClick={() => { tap(); back() }}
+      className="glass-btn pointer-events-auto grid size-14 place-items-center rounded-full">
+      <Icon name="back" size={24} />
+    </button>
+  )
+}
+
+export function TopBar({ title, showBack = true, action }: { title: string; showBack?: boolean; action?: ReactNode }) {
+  const back = useGoBack()
+  useEdgeSwipeBack(showBack)
   return (
     <>
       <div aria-hidden className="h-[calc(4.75rem+env(safe-area-inset-top))] shrink-0" />
       {/* content dissolves into the page as it passes under the bar */}
       <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#06070c]/90 via-[#06070c]/55 to-transparent" />
       <header className="glass-strong fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 items-center gap-2 rounded-full p-1.5">
-        <div className="w-10">
+        <div className="w-11">
           {showBack && (
-            <RoundButton label="Back" onClick={() => (window.history.state?.idx > 0 ? nav(-1) : nav('/', { replace: true }))}>
+            <RoundButton label="Back" onClick={back}>
               <Icon name="back" />
             </RoundButton>
           )}
         </div>
         <h1 className="min-w-0 flex-1 truncate text-center text-[17px] font-semibold">{title}</h1>
-        <div className="flex w-10 justify-end">{action}</div>
+        <div className="flex w-11 justify-end">{action}</div>
       </header>
     </>
   )
@@ -365,7 +403,7 @@ export function PillButton({ children, onClick, disabled, className = '' }: { ch
 }
 
 export const inputCls =
-  'w-full rounded-2xl border border-line bg-white/[0.06] px-4 py-4 shadow-[inset_0_2px_8px_rgb(0_0_0/0.28)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-muted/70 focus:border-accent/70 focus:bg-white/[0.09] focus:ring-4 focus:ring-accent/15 disabled:opacity-60'
+  'w-full rounded-2xl glass-btn px-4 py-4 shadow-[inset_0_2px_8px_rgb(0_0_0/0.28)] outline-none transition-[border-color,box-shadow,background-color] placeholder:text-muted/70 focus:border-accent/70 focus:bg-white/[0.09] focus:ring-4 focus:ring-accent/15 disabled:opacity-60'
 
 export function Field({ label: text, children }: { label: string; children: ReactNode }) {
   return (
@@ -449,11 +487,19 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
+  const [drag, setDrag] = useState(0)
+  const from = useRef<number | null>(null)
+  useEffect(() => { if (!open) setDrag(0) }, [open])
+
   if (!open && !present) return null
   const shown = last.current
   return createPortal(
     <div className={`${open ? 'animate-fade' : 'animate-fade-out pointer-events-none'} fixed inset-0 z-50 flex items-end justify-center bg-black/45 backdrop-blur-[6px]`} onClick={onClose}>
       <div role="dialog" aria-modal onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => { from.current = e.touches[0].clientY }}
+        onTouchMove={(e) => { if (from.current !== null) setDrag(Math.max(0, e.touches[0].clientY - from.current)) }}
+        onTouchEnd={() => { const far = drag > 90; from.current = null; if (far) onClose(); else setDrag(0) }}
+        style={drag ? { transform: `translateY(${drag}px)`, opacity: 1 - Math.min(drag / 400, 0.5), transition: 'none' } : { transition: 'transform .35s cubic-bezier(0.22,1,0.36,1), opacity .35s' }}
         className={`${open ? 'animate-sheet' : 'animate-sheet-out'} glass-strong mb-[max(0.75rem,env(safe-area-inset-bottom))] w-[calc(100%-1.5rem)] max-w-[456px] rounded-[32px] px-5 pb-5 pt-3`}>
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/25" />
         {shown.title && <h2 className="mb-4 whitespace-pre-line text-lg font-bold">{shown.title}</h2>}
