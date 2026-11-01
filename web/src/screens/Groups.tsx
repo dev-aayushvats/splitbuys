@@ -5,8 +5,8 @@ import { useAuth } from '../lib/auth'
 import { formatPaise } from '../lib/money'
 import { label, type GroupSummary } from '../lib/types'
 import {
-  Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, PillButton, Screen, SectionTitle,
-  Sheet, Skeleton, Tile, inputCls, useAsync, useFeedback,
+  Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, RoundButton, Screen, SectionTitle,
+  Sheet, Skeleton, Tile, inputCls, tap, useAsync, useFeedback,
 } from '../ui'
 
 export function GroupsScreen() {
@@ -15,11 +15,13 @@ export function GroupsScreen() {
   const { toast } = useFeedback()
   const { data: groups, error, loading, reload } = useAsync(() => api.groups(), [])
   const [creating, setCreating] = useState(false)
+  const [menu, setMenu] = useState(false)
+  const [picking, setPicking] = useState(false)
   const me = user!
 
   return (
     <Screen className="pt-safe pb-safe" onRefresh={reload}>
-      <div className="space-y-6 px-5 pb-10 pt-4">
+      <div className="space-y-6 px-5 pb-32 pt-4">
         <div className="flex items-center gap-3">
           <div className="min-w-0 flex-1">
             <div className="text-[13px] text-muted">Welcome back</div>
@@ -28,10 +30,15 @@ export function GroupsScreen() {
           <button aria-label="Profile" onClick={() => nav('/profile')}><Avatar user={me} size={46} /></button>
         </div>
 
-        <Overview groups={groups ?? []} onNewGroup={() => setCreating(true)} />
+        <Overview groups={groups ?? []} />
 
         <section>
-          <SectionTitle trailing={groups && <span className="text-muted">{groups.length}</span>}>Your groups</SectionTitle>
+          <SectionTitle trailing={
+            <div className="flex items-center gap-3">
+              {groups && <span className="text-muted">{groups.length}</span>}
+              <RoundButton label="New group" onClick={() => setCreating(true)}><Icon name="plus" size={22} /></RoundButton>
+            </div>
+          }>Your groups</SectionTitle>
           {loading && !groups ? <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[78px] rounded-[22px]" />)}</div>
             : error && !groups ? <ErrorRetry error={error} onRetry={reload} />
             : groups && groups.length === 0 ? (
@@ -48,6 +55,39 @@ export function GroupsScreen() {
         </section>
       </div>
 
+      {/* quick actions, reachable with the thumb */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] justify-end px-5">
+        <button type="button" aria-label="Add" onClick={() => { tap(); setMenu(true) }}
+          className="btn-accent animate-pop pointer-events-auto grid size-16 place-items-center rounded-full">
+          <Icon name="plus" size={32} />
+        </button>
+      </div>
+
+      <Sheet open={menu} onClose={() => setMenu(false)}>
+        <div className="space-y-3">
+          <button type="button" className="glass-btn flex w-full items-center gap-3 rounded-full px-5 py-3.5 font-semibold"
+            onClick={() => { setMenu(false); setCreating(true) }}>
+            <Icon name="groups" /> New group
+          </button>
+          <button type="button" className="glass-btn flex w-full items-center gap-3 rounded-full px-5 py-3.5 font-semibold disabled:opacity-45"
+            disabled={!groups?.length}
+            onClick={() => { setMenu(false); setPicking(true) }}>
+            <Icon name="receipt" /> Add expense
+          </button>
+        </div>
+      </Sheet>
+
+      <Sheet open={picking} onClose={() => setPicking(false)} title="Add expense to which group?">
+        <div className="max-h-[50dvh] space-y-3 overflow-y-auto">
+          {groups?.map((g) => (
+            <button key={g.id} type="button" className="glass-btn flex w-full items-center gap-3 rounded-full px-5 py-3.5 text-left font-semibold"
+              onClick={() => { setPicking(false); nav(`/groups/${g.id}/expense/new`) }}>
+              <Icon name="groups" /> <span className="min-w-0 flex-1 truncate">{g.name}</span>
+            </button>
+          ))}
+        </div>
+      </Sheet>
+
       <NewGroupSheet open={creating} onClose={() => setCreating(false)} onCreate={async (name) => {
         try {
           const g = await api.createGroup(name)
@@ -60,7 +100,7 @@ export function GroupsScreen() {
   )
 }
 
-function Overview({ groups, onNewGroup }: { groups: GroupSummary[]; onNewGroup: () => void }) {
+function Overview({ groups }: { groups: GroupSummary[] }) {
   const owed = groups.filter((g) => g.myBalancePaise > 0).reduce((s, g) => s + g.myBalancePaise, 0)
   const owe = groups.filter((g) => g.myBalancePaise < 0).reduce((s, g) => s - g.myBalancePaise, 0)
   const net = owed - owe
@@ -73,7 +113,6 @@ function Overview({ groups, onNewGroup }: { groups: GroupSummary[]; onNewGroup: 
             <div className="flex gap-2"><dt className="text-muted">You are owed</dt><dd className="truncate font-bold text-pos">{formatPaise(owed)}</dd></div>
             <div className="flex gap-2"><dt className="text-muted">You owe</dt><dd className="truncate font-bold text-neg">{formatPaise(owe)}</dd></div>
           </dl>
-          <PillButton onClick={onNewGroup} className="mt-3">New group</PillButton>
         </div>
         <Dashed className="relative flex w-[124px] shrink-0 flex-col items-center justify-center rounded-[24px] px-2.5 py-4 text-center">
           <div className="text-xs text-muted">Net balance</div>

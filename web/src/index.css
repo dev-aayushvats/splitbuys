@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-outer: #0d111b;
-  --color-bg: #131827;
+  --color-outer: #09090a;
+  --color-bg: #101113;
   /* surfaces are translucent whites: whatever is behind them (the ambient backdrop) shows through */
   --color-surface: rgb(255 255 255 / 0.07);
   --color-high: rgb(255 255 255 / 0.12);
@@ -12,7 +12,7 @@
   --color-accent-deep: #f2b92a;
   --color-on-accent: #17140a;
   --color-ink: #f4f5fa;
-  --color-muted: #a2a8bd;
+  --color-muted: #a1a1a8;
   --color-pos: #62e09a;
   --color-neg: #ff7b7b;
   --animate-fade: fade 0.2s ease-out both;
@@ -49,20 +49,20 @@
   background: linear-gradient(145deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.035) 60%, rgb(255 255 255 / 0.06));
   -webkit-backdrop-filter: blur(26px) saturate(140%);
   backdrop-filter: blur(26px) saturate(140%);
-  box-shadow: 0 14px 34px -16px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.12);
+  box-shadow: 0 14px 34px -16px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.08);
   &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(150deg, rgb(255 255 255 / 0.26), rgb(255 255 255 / 0.05) 40%, rgb(255 255 255 / 0.03) 65%, rgb(255 255 255 / 0.14));
+    background: linear-gradient(150deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.03) 65%, rgb(255 255 255 / 0.14));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 }
 @utility glass-strong {
   position: relative;
-  background: linear-gradient(150deg, rgb(255 255 255 / 0.11), rgb(255 255 255 / 0.04) 55%, rgb(255 255 255 / 0.07)), rgb(16 20 32 / 0.7);
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.11), rgb(255 255 255 / 0.04) 55%, rgb(255 255 255 / 0.07)), rgb(12 12 14 / 0.78);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
   backdrop-filter: blur(40px) saturate(150%);
-  box-shadow: 0 20px 50px -16px rgb(0 0 0 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  box-shadow: 0 20px 50px -16px rgb(0 0 0 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.09);
   &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(150deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.05) 40%, rgb(255 255 255 / 0.03) 65%, rgb(255 255 255 / 0.16));
+    background: linear-gradient(150deg, rgb(255 255 255 / 0.22), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.03) 65%, rgb(255 255 255 / 0.16));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 }
@@ -145,11 +145,11 @@ html, body { overflow-x: clip; }
 }
 /* respect "reduce transparency": swap frosted panes for solid ones */
 @media (prefers-reduced-transparency: reduce) {
-  .glass, .glass-strong, .glass-btn { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgb(28 30 46); }
+  .glass, .glass-strong, .glass-btn { -webkit-backdrop-filter: none; backdrop-filter: none; background: rgb(24 24 26); }
 }
 /* browsers without backdrop-filter get a denser pane so text stays readable */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass, .glass-strong { background-color: rgb(22 27 42 / 0.92); }
+  .glass, .glass-strong { background-color: rgb(20 20 22 / 0.94); }
 }
 
 /* amount hugs the ₹ sign where the browser can size inputs to content; fixed width elsewhere */

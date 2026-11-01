@@ -159,7 +159,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
           <p role="status" className={`text-center font-semibold ${result.problem ? 'text-neg' : 'text-muted'}`}>{result.problem ?? result.hint ?? ''}</p>
         </div>
 
-        <div className="sticky bottom-0 bg-gradient-to-t from-[#0d111b]/80 via-[#0d111b]/40 to-transparent px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6">
+        <div className="sticky bottom-0 bg-gradient-to-t from-[#09090a]/80 via-[#09090a]/40 to-transparent px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6">
           <ConfirmButton type="submit" busy={busy} disabled={!result.splits}>{expense ? 'Save changes' : 'Add expense'}</ConfirmButton>
         </div>
       </form>

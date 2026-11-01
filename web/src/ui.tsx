@@ -216,7 +216,7 @@ export function TopBar({ title, showBack = true, action }: { title: string; show
     <>
       <div aria-hidden className="h-[calc(4.75rem+env(safe-area-inset-top))] shrink-0" />
       {/* content dissolves into the page as it passes under the bar */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#1a2236]/90 via-[#1a2236]/55 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#17181b]/90 via-[#17181b]/55 to-transparent" />
       <header className="glass-strong fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 items-center gap-2 rounded-full p-1.5">
         <div className="w-11">
           {showBack && (
@@ -238,8 +238,8 @@ export function TopBar({ title, showBack = true, action }: { title: string; show
  */
 export function Backdrop() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#1a2236] via-[#131827] to-[#0d111b]">
-      <div className="absolute inset-x-0 top-0 h-[60%] bg-[radial-gradient(ellipse_90%_70%_at_30%_0%,rgb(120_140_190/0.16),transparent_70%)]" />
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#17181b] via-[#101113] to-[#09090a]">
+      <div className="absolute inset-x-0 top-0 h-[60%] bg-[radial-gradient(ellipse_90%_70%_at_30%_0%,rgb(255_255_255/0.05),transparent_70%)]" />
       <svg className="absolute inset-0 size-full opacity-[0.06] mix-blend-overlay">
         <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" /></filter>
         <rect width="100%" height="100%" filter="url(#grain)" />
@@ -287,7 +287,7 @@ export function Dock({ items, index, onChange }: { items: { label: string; icon:
   return (
     <>
       {/* content dissolves into the page as it passes under the dock */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#0d111b] via-[#0d111b]/80 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#09090a] via-[#09090a]/80 to-transparent" />
       <nav className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full p-1.5">
         <div ref={t.scroller} role="tablist" onScroll={t.onScroll} style={t.style} className="no-scrollbar relative flex snap-x overflow-x-auto rounded-full">
           <div aria-hidden className="absolute inset-y-0 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -346,7 +346,7 @@ export function AvatarStack({ users, size = 34, max = 4 }: { users: User[]; size
   const extra = users.length - shown.length
   const step = size * 0.62
   const count = shown.length + (extra > 0 ? 1 : 0)
-  const ring = 'absolute rounded-full bg-[#131827] p-0.5'
+  const ring = 'absolute rounded-full bg-[#101113] p-0.5'
   return (
     <div className="relative shrink-0" style={{ width: size + 4 + step * (count - 1), height: size + 4 }}>
       {shown.map((u, i) => (
