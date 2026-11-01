@@ -159,7 +159,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
           <p role="status" className={`text-center font-semibold ${result.problem ? 'text-neg' : 'text-muted'}`}>{result.problem ?? result.hint ?? ''}</p>
         </div>
 
-        <div className="sticky bottom-0 bg-gradient-to-t from-[#06070c]/80 via-[#06070c]/40 to-transparent px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6">
+        <div className="sticky bottom-0 bg-gradient-to-t from-[#0d111b]/80 via-[#0d111b]/40 to-transparent px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-6">
           <ConfirmButton type="submit" busy={busy} disabled={!result.splits}>{expense ? 'Save changes' : 'Add expense'}</ConfirmButton>
         </div>
       </form>
@@ -173,7 +173,7 @@ function PersonRow({ user, name, selected, onToggle, field }: {
   return (
     <div role="checkbox" aria-checked={selected} tabIndex={0} onClick={onToggle}
       onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && (e.preventDefault(), onToggle())}
-      className={`glass-lite flex items-center gap-3 rounded-[24px] py-2.5 pl-3 pr-3.5 transition-shadow ${selected ? 'shadow-[0_0_0_1.5px_rgb(255_216_77/0.55),0_10px_28px_-12px_rgb(255_200_50/0.35)]' : ''}`}>
+      className={`glass-lite flex items-center gap-3 rounded-[24px] py-2.5 pl-3 pr-3.5 transition-shadow ${selected ? 'shadow-[0_0_0_1.5px_rgb(250_210_70/0.6)]' : ''}`}>
       <div className={selected ? '' : 'opacity-40'}><Avatar user={user} size={40} /></div>
       <span className={`min-w-0 flex-1 truncate font-semibold ${selected ? '' : 'text-muted'}`}>{name}</span>
       {field}

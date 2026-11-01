@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth'
 import { dayLabel, formatDate, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
 import { label, type Expense, type GroupData, type Transfer, type User } from '../lib/types'
 import {
-  Avatar, AvatarStack, BackFab, Dashed, Dock, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, RoundButton, Screen,
+  Avatar, AvatarStack, Dashed, Dock, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, RoundButton, Screen,
   SectionTitle, Sheet, Skeleton, Tile, TopBar, tap, inputCls, useAsync, useFeedback,
 } from '../ui'
 
@@ -72,16 +72,15 @@ export function GroupScreen() {
       <Dock index={tab} onChange={goTo}
         items={[{ label: 'Expenses', icon: 'receipt' }, { label: 'Balances', icon: 'wallet' }, { label: 'Members', icon: 'groups' }]} />
 
-      {/* back and add float just above the dock, where a thumb rests */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] items-center justify-between px-5">
-        <BackFab />
-        {tab === 0 && (
+      {/* the add button floats above the dock, on the right */}
+      {tab === 0 && (
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(6.25rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] justify-end px-5">
           <button type="button" aria-label="Add expense" onClick={() => { tap(); nav(`/groups/${id}/expense/new`) }}
             className="btn-accent animate-pop pointer-events-auto grid size-16 place-items-center rounded-full">
             <Icon name="plus" size={32} />
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <Sheet open={menu} onClose={() => setMenu(false)}>
         <div className="space-y-3">

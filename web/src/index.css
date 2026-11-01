@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-outer: #06070c;
-  --color-bg: #0a0b14;
+  --color-outer: #0d111b;
+  --color-bg: #131827;
   /* surfaces are translucent whites: whatever is behind them (the ambient backdrop) shows through */
   --color-surface: rgb(255 255 255 / 0.07);
   --color-high: rgb(255 255 255 / 0.12);
@@ -24,9 +24,6 @@
   --animate-slide-back: slide-back 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-sheet-out: sheet-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
   --animate-fade-out: fade-out 0.22s ease-in both;
-  --animate-drift-a: drift-a 26s ease-in-out infinite alternate;
-  --animate-drift-b: drift-b 32s ease-in-out infinite alternate;
-  --animate-drift-c: drift-c 38s ease-in-out infinite alternate;
   @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
   @keyframes sheet { from { opacity: 0; transform: translateY(40px) scale(0.97) } to { opacity: 1; transform: none } }
@@ -36,9 +33,6 @@
   @keyframes slide-back { from { opacity: 0; transform: translateX(-28px) } to { opacity: 1; transform: none } }
   @keyframes sheet-out { to { opacity: 0; transform: translateY(32px) scale(0.97) } }
   @keyframes fade-out { to { opacity: 0 } }
-  @keyframes drift-a { to { transform: translate3d(60px, 90px, 0) scale(1.15) } }
-  @keyframes drift-b { to { transform: translate3d(-70px, -60px, 0) scale(1.1) } }
-  @keyframes drift-c { to { transform: translate3d(50px, -80px, 0) scale(1.2) } }
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -52,46 +46,40 @@
    --------------------------------------------------------------------------------------------------------------- */
 @utility glass {
   position: relative;
-  background: linear-gradient(140deg, rgb(255 255 255 / 0.15), rgb(255 255 255 / 0.05) 55%, rgb(255 255 255 / 0.09));
-  -webkit-backdrop-filter: blur(28px) saturate(185%) brightness(1.08);
-  backdrop-filter: blur(28px) saturate(185%) brightness(1.08);
-  box-shadow:
-    0 14px 38px -12px rgb(0 0 0 / 0.6),
-    inset 0 1px 0 rgb(255 255 255 / 0.22),
-    inset 0 -12px 26px -16px rgb(255 255 255 / 0.12);
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.035) 60%, rgb(255 255 255 / 0.06));
+  -webkit-backdrop-filter: blur(26px) saturate(140%);
+  backdrop-filter: blur(26px) saturate(140%);
+  box-shadow: 0 14px 34px -16px rgb(0 0 0 / 0.65), inset 0 1px 0 rgb(255 255 255 / 0.12);
   &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(150deg, rgb(255 255 255 / 0.5), rgb(255 255 255 / 0.06) 38%, rgb(255 255 255 / 0.03) 62%, rgb(255 255 255 / 0.3));
+    background: linear-gradient(150deg, rgb(255 255 255 / 0.26), rgb(255 255 255 / 0.05) 40%, rgb(255 255 255 / 0.03) 65%, rgb(255 255 255 / 0.14));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 }
 @utility glass-strong {
   position: relative;
-  background: linear-gradient(150deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.06) 50%, rgb(255 255 255 / 0.1)), rgb(14 15 28 / 0.66);
-  -webkit-backdrop-filter: blur(46px) saturate(210%) brightness(1.12);
-  backdrop-filter: blur(46px) saturate(210%) brightness(1.12);
-  box-shadow:
-    0 22px 60px -14px rgb(0 0 0 / 0.75),
-    inset 0 1px 0 rgb(255 255 255 / 0.28),
-    inset 0 -14px 30px -18px rgb(255 255 255 / 0.14);
+  background: linear-gradient(150deg, rgb(255 255 255 / 0.11), rgb(255 255 255 / 0.04) 55%, rgb(255 255 255 / 0.07)), rgb(16 20 32 / 0.7);
+  -webkit-backdrop-filter: blur(40px) saturate(150%);
+  backdrop-filter: blur(40px) saturate(150%);
+  box-shadow: 0 20px 50px -16px rgb(0 0 0 / 0.75), inset 0 1px 0 rgb(255 255 255 / 0.14);
   &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(150deg, rgb(255 255 255 / 0.55), rgb(255 255 255 / 0.07) 38%, rgb(255 255 255 / 0.04) 62%, rgb(255 255 255 / 0.32));
+    background: linear-gradient(150deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.05) 40%, rgb(255 255 255 / 0.03) 65%, rgb(255 255 255 / 0.16));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 }
 @utility glass-lite {
   position: relative;
-  background: linear-gradient(140deg, rgb(255 255 255 / 0.13), rgb(255 255 255 / 0.05) 60%, rgb(255 255 255 / 0.08));
-  box-shadow: 0 8px 22px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.14);
+  background: linear-gradient(145deg, rgb(255 255 255 / 0.08), rgb(255 255 255 / 0.035) 60%, rgb(255 255 255 / 0.05));
+  box-shadow: 0 8px 20px -12px rgb(0 0 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.09);
   &::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; pointer-events: none;
-    background: linear-gradient(150deg, rgb(255 255 255 / 0.3), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.02) 60%, rgb(255 255 255 / 0.18));
+    background: linear-gradient(150deg, rgb(255 255 255 / 0.2), rgb(255 255 255 / 0.04) 40%, rgb(255 255 255 / 0.02) 65%, rgb(255 255 255 / 0.1));
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 }
 /* primary action: a glowing amber glass pill */
 @utility btn-accent {
-  background: linear-gradient(180deg, #ffe37f, #f6c426 70%, #eeb81c);
+  background: linear-gradient(180deg, #ffe574, #fad14a 75%, #f2c53a);
   color: var(--color-on-accent);
-  box-shadow: 0 12px 30px -8px rgb(255 205 60 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.65), inset 0 -3px 8px rgb(150 100 0 / 0.25);
+  box-shadow: 0 8px 20px -8px rgb(250 210 70 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.5);
 }
 
 /* secondary action: a frosted pill that presses in like the rest of the glass */
@@ -161,7 +149,7 @@ html, body { overflow-x: clip; }
 }
 /* browsers without backdrop-filter get a denser pane so text stays readable */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass, .glass-strong { background-color: rgb(24 26 40 / 0.88); }
+  .glass, .glass-strong { background-color: rgb(22 27 42 / 0.92); }
 }
 
 /* amount hugs the ₹ sign where the browser can size inputs to content; fixed width elsewhere */

@@ -165,9 +165,9 @@ export function ErrorRetry({ error, onRetry }: { error: unknown; onRetry: () => 
   )
 }
 
-/** A frosted pane. (Named for the dashed outline it replaced; call sites pass padding/radius.) */
+/** A dashed-outline section panel; call sites pass padding/radius. */
 export const Dashed = ({ children, className = 'p-4' }: { children: ReactNode; className?: string }) => (
-  <div className={`glass-lite rounded-[28px] ${className}`}>{children}</div>
+  <div className={`rounded-[28px] border border-dashed border-white/20 bg-white/[0.03] ${className}`}>{children}</div>
 )
 
 export function RoundButton({ children, onClick, label: aria, disabled }: { children: ReactNode; onClick?: () => void; label: string; disabled?: boolean }) {
@@ -209,17 +209,6 @@ function useEdgeSwipeBack(enabled: boolean) {
   }, [enabled, back])
 }
 
-/** Thumb-reach back button for the bottom of the screen, next to the dock. */
-export function BackFab() {
-  const back = useGoBack()
-  return (
-    <button type="button" aria-label="Back" onClick={() => { tap(); back() }}
-      className="glass-btn pointer-events-auto grid size-14 place-items-center rounded-full">
-      <Icon name="back" size={24} />
-    </button>
-  )
-}
-
 export function TopBar({ title, showBack = true, action }: { title: string; showBack?: boolean; action?: ReactNode }) {
   const back = useGoBack()
   useEdgeSwipeBack(showBack)
@@ -227,7 +216,7 @@ export function TopBar({ title, showBack = true, action }: { title: string; show
     <>
       <div aria-hidden className="h-[calc(4.75rem+env(safe-area-inset-top))] shrink-0" />
       {/* content dissolves into the page as it passes under the bar */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#06070c]/90 via-[#06070c]/55 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#1a2236]/90 via-[#1a2236]/55 to-transparent" />
       <header className="glass-strong fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 items-center gap-2 rounded-full p-1.5">
         <div className="w-11">
           {showBack && (
@@ -244,20 +233,14 @@ export function TopBar({ title, showBack = true, action }: { title: string; show
 }
 
 /**
- * Ambient light behind the whole app: drifting colour orbs, plus a dot grid, grain and a few crisp rings. The fine
- * detail is what the glass panes frost over; on a smooth gradient alone their blur would be invisible.
+ * The page behind everything: a still, muted slate-navy gradient with a soft cool light at the top and a little grain.
+ * It stays quiet on purpose; the grain and light give the glass panes something to frost over.
  */
 export function Backdrop() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#0b0c18] via-[#080913] to-[#06070c]">
-      <div className="animate-drift-a absolute -left-28 -top-24 size-[26rem] rounded-full bg-[radial-gradient(circle,rgb(255_196_48/0.36),transparent_65%)]" />
-      <div className="animate-drift-b absolute -right-40 top-[28%] size-[30rem] rounded-full bg-[radial-gradient(circle,rgb(124_92_255/0.40),transparent_65%)]" />
-      <div className="animate-drift-c absolute -bottom-32 left-[-4rem] size-[28rem] rounded-full bg-[radial-gradient(circle,rgb(34_211_190/0.28),transparent_65%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(rgb(255_255_255/0.16)_1px,transparent_1.6px)] [background-size:26px_26px] [mask-image:radial-gradient(ellipse_80%_70%_at_50%_45%,#000,transparent_85%)]" />
-      <div className="animate-drift-b absolute -right-16 top-24 size-72 rounded-full border border-white/[0.09]" />
-      <div className="animate-drift-a absolute -left-24 top-[46%] size-80 rounded-full border border-white/[0.07]" />
-      <div className="animate-drift-c absolute bottom-24 right-8 size-44 rounded-full border border-accent/[0.12]" />
-      <svg className="absolute inset-0 size-full opacity-[0.07] mix-blend-overlay">
+    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#1a2236] via-[#131827] to-[#0d111b]">
+      <div className="absolute inset-x-0 top-0 h-[60%] bg-[radial-gradient(ellipse_90%_70%_at_30%_0%,rgb(120_140_190/0.16),transparent_70%)]" />
+      <svg className="absolute inset-0 size-full opacity-[0.06] mix-blend-overlay">
         <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" /></filter>
         <rect width="100%" height="100%" filter="url(#grain)" />
       </svg>
@@ -304,7 +287,7 @@ export function Dock({ items, index, onChange }: { items: { label: string; icon:
   return (
     <>
       {/* content dissolves into the page as it passes under the dock */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#06070c] via-[#06070c]/75 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#0d111b] via-[#0d111b]/80 to-transparent" />
       <nav className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full p-1.5">
         <div ref={t.scroller} role="tablist" onScroll={t.onScroll} style={t.style} className="no-scrollbar relative flex snap-x overflow-x-auto rounded-full">
           <div aria-hidden className="absolute inset-y-0 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -363,7 +346,7 @@ export function AvatarStack({ users, size = 34, max = 4 }: { users: User[]; size
   const extra = users.length - shown.length
   const step = size * 0.62
   const count = shown.length + (extra > 0 ? 1 : 0)
-  const ring = 'absolute rounded-full bg-[#0b0c18] p-0.5'
+  const ring = 'absolute rounded-full bg-[#131827] p-0.5'
   return (
     <div className="relative shrink-0" style={{ width: size + 4 + step * (count - 1), height: size + 4 }}>
       {shown.map((u, i) => (
@@ -545,7 +528,7 @@ export function AuthPage({ title, subtitle, children }: { title: string; subtitl
   return (
     <Screen className="pt-safe pb-safe">
       <div className="flex flex-1 flex-col justify-center px-5 py-8">
-        <div className="btn-accent mx-auto grid size-[76px] place-items-center rounded-[26px] shadow-[0_18px_50px_-10px_rgb(255_200_50/0.55)]"><Icon name="split" size={38} /></div>
+        <div className="btn-accent mx-auto grid size-[76px] place-items-center rounded-[26px] shadow-[0_14px_36px_-12px_rgb(250_210_70/0.45)]"><Icon name="split" size={38} /></div>
         <h1 className="mt-6 text-center text-[28px] font-extrabold">{title}</h1>
         {subtitle && <p className="mt-2 text-center text-muted">{subtitle}</p>}
         <div className="glass mt-7 space-y-5 rounded-[32px] p-5">{children}</div>

@@ -66,7 +66,6 @@ function Overview({ groups, onNewGroup }: { groups: GroupSummary[]; onNewGroup: 
   const net = owed - owe
   return (
     <div className="glass relative overflow-hidden rounded-[32px] p-5">
-      <div aria-hidden className="pointer-events-none absolute -right-10 -top-12 size-48 rounded-full bg-[radial-gradient(circle,rgb(255_200_50/0.30),transparent_68%)]" />
       <div className="flex items-stretch gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-lg font-bold">Overview</div>
