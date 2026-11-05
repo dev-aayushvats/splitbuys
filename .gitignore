@@ -5,4 +5,5 @@
 *.db
 *.tsbuildinfo
 node_modules/
+
 dist/
