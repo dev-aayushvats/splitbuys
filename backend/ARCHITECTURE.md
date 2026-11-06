@@ -47,7 +47,7 @@ With `SPRING_PROFILES_ACTIVE=prod` the app refuses to start unless real email is
 ## Data
 
 Flyway owns the schema, with one migration folder per database (`db/migration/sqlite`, `db/migration/postgresql`); Hibernate never alters it. `V1` baselines the original
-schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns.
+schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns. Later migrations add columns (`upi_id`: SQLite `V3`, PostgreSQL `V2`).
 Concurrent edits to a group or expense are rejected with 409 instead of silently overwriting. Balances are computed
 with four aggregate queries however many groups are listed. SQLite is the local default. PostgreSQL (Neon) is selected with
 `SPRING_PROFILES_ACTIVE=postgres` (see `.env.example`); that profile turns on Hibernate schema validation (SQLite's
@@ -80,6 +80,13 @@ is paging cannot repeat or skip anything, and the cost of a page does not grow w
 between rows with the same timestamp. It is done in two steps (page the ids in SQL, then load the rows with their shares),
 because a SQL `LIMIT` combined with a collection fetch makes Hibernate page in memory, which loads the whole history.
 Group totals come from the balances endpoint (`totalSpentPaise`), so clients need not download everything to add it up.
+
+## UPI payment links
+
+A user can store a UPI ID (`PUT/DELETE /api/v1/me/upi`, validated and lower-cased server side). It is private: it is
+returned only to its owner (`ProfileDto`, never the shared `UserDto`) and in the settle-up plan only to the person who has to
+pay it, together with a ready `upi://pay?...` link (payee, rupee amount, note). Nobody else in the group sees it. A UPI link
+opens the payment app but cannot confirm the payment, so the payer still records the settlement afterwards.
 
 ## API
 

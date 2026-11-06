@@ -107,7 +107,7 @@ class BackupApiTest extends ApiTest {
         assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(path)));
         List<String> lines = lines(path);
         assertEquals("-- splitbuys data backup", lines.get(0));
-        assertTrue(lines.stream().anyMatch(l -> l.startsWith("COPY app_user (id, email, name) FROM stdin;")));
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith("COPY app_user (id, email, name, upi_id) FROM stdin;")));
         assertTrue(lines.contains("\\."), "each COPY block is terminated like pg_dump's");
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("SELECT setval(pg_get_serial_sequence('expense'")));
         assertTrue(lines.get(lines.size() - 1).startsWith("-- end of dump"));
@@ -118,6 +118,7 @@ class BackupApiTest extends ApiTest {
     void wipeAndRestoreBringsBackEverythingAndKeepsNewIdsUnique() throws Exception {
         Session a = signIn("Asha"), b = signIn("Bo"), c = signIn("Chen");
         long g = groupOf(a, b, c);
+        put("/api/v1/me/upi", a, "{\"upiId\":\"asha@okbank\"}").andExpect(status().isOk());
         post("/api/v1/groups/" + g + "/expenses", a, equalExpense("Dinner", 9000, a.userId(), a.userId(), b.userId(), c.userId())).andExpect(status().isCreated());
         post("/api/v1/groups/" + g + "/expenses", b, "{\"description\":\"Cab\",\"amountPaise\":1000,\"payerId\":" + b.userId()
                 + ",\"splitType\":\"PERCENT\",\"splits\":[{\"userId\":" + a.userId() + ",\"value\":70},{\"userId\":" + b.userId() + ",\"value\":30}]}")
@@ -146,6 +147,8 @@ class BackupApiTest extends ApiTest {
         assertEquals(groupsBefore, get("/api/v1/groups", a).andReturn().getResponse().getContentAsString());
         assertEquals(expensesBefore, get("/api/v1/groups/" + g + "/expenses", a).andReturn().getResponse().getContentAsString());
         assertEquals(balancesBefore, get("/api/v1/groups/" + g + "/balances", b).andReturn().getResponse().getContentAsString());
+
+        get("/api/v1/me", a).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.upiId").value("asha@okbank"));
 
         // identity sequences were advanced past the restored ids: new rows do not collide
         long maxBefore = jdbc.queryForObject("SELECT MAX(id) FROM expense", Long.class);

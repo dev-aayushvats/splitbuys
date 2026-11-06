@@ -1,5 +1,5 @@
 import type {
-  Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Settlement, User,
+  Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Profile, Settlement,
 } from './types'
 
 // Unset (dev): the local backend. Set to an empty string (the Docker image does this): same origin, i.e. calls go to /api on
@@ -50,9 +50,11 @@ async function send<T = unknown>(method: string, path: string, body?: unknown): 
 export const api = {
   requestOtp: (email: string) => send<void>('POST', '/auth/request-otp', { email }),
   verifyOtp: (email: string, code: string) =>
-    send<{ token: string; user: User }>('POST', '/auth/verify-otp', { email, code }),
-  me: () => send<User>('GET', '/me'),
-  setName: (name: string) => send<User>('PUT', '/me', { name }),
+    send<{ token: string; user: Profile }>('POST', '/auth/verify-otp', { email, code }),
+  me: () => send<Profile>('GET', '/me'),
+  setName: (name: string) => send<Profile>('PUT', '/me', { name }),
+  setUpi: (upiId: string) => send<Profile>('PUT', '/me/upi', { upiId }),
+  clearUpi: () => send<Profile>('DELETE', '/me/upi'),
 
   groups: () => send<GroupSummary[]>('GET', '/groups'),
   createGroup: (name: string) => send<GroupDetail>('POST', '/groups', { name }),

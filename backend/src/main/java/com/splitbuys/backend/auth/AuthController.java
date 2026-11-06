@@ -1,6 +1,6 @@
 package com.splitbuys.backend.auth;
 
-import com.splitbuys.backend.user.UserDto;
+import com.splitbuys.backend.user.ProfileDto;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import java.util.Map;
@@ -18,7 +18,7 @@ class AuthController {
     record OtpVerify(@NotBlank String email, @NotBlank String code) {
     }
 
-    record AuthResponse(String token, UserDto user, boolean newUser) {
+    record AuthResponse(String token, ProfileDto user, boolean newUser) {
     }
 
     private final OtpService otp;
@@ -38,6 +38,6 @@ class AuthController {
     @PostMapping("/verify-otp")
     AuthResponse verifyOtp(@Valid @RequestBody OtpVerify req) {
         OtpService.Verified v = otp.verify(req.email(), req.code());
-        return new AuthResponse(tokens.issue(v.user().getId()), UserDto.from(v.user()), v.newUser());
+        return new AuthResponse(tokens.issue(v.user().getId()), ProfileDto.from(v.user()), v.newUser());
     }
 }

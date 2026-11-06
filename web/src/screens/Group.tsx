@@ -298,7 +298,7 @@ function BalancesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
             <Tile key={i} leading={<AvatarStack users={[t.from, t.to]} size={34} max={2} />}
               title={`${who(t.from, me)} ${t.from.id === me.id ? 'pay' : 'pays'} ${t.to.id === me.id ? 'you' : label(t.to)}`}
               subtitle={formatPaise(t.amountPaise)}
-              trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPaying(t)}>Record</PillButton>} />
+              trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPaying(t)}>{t.upiLink ? 'Pay' : 'Record'}</PillButton>} />
           ))}
         </Dashed>
       </section>
@@ -336,8 +336,36 @@ function PaymentSheet({ transfer, me, onClose, onSubmit }: {
 }) {
   return (
     <Sheet open={!!transfer} onClose={onClose} title={transfer ? `${who(transfer.from, me)} → ${who(transfer.to, me)}` : ''}>
-      {transfer && <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />}
+      {transfer && (
+        <div className="space-y-5">
+          {transfer.upiLink && <UpiPay transfer={transfer} />}
+          <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />
+        </div>
+      )}
     </Sheet>
+  )
+}
+
+/** Opens the user's UPI app with the receiver and amount filled in. It cannot tell whether the payment happened. */
+function UpiPay({ transfer }: { transfer: Transfer }) {
+  const { toast } = useFeedback()
+  async function copy() {
+    try { await navigator.clipboard.writeText(transfer.upiId!); toast('UPI ID copied') } catch { toast('Could not copy') }
+  }
+  return (
+    <div className="space-y-3">
+      <a href={transfer.upiLink!} onClick={tap}
+        className="btn-accent flex h-13 w-full items-center justify-center gap-2 rounded-full py-3.5 font-bold">
+        <Icon name="payments" size={20} /> Pay {formatPaise(transfer.amountPaise)} via UPI
+      </a>
+      <div className="flex items-center gap-2 rounded-[20px] bg-black/25 py-1.5 pl-3.5 pr-1.5 ring-1 ring-white/10">
+        <span className="min-w-0 flex-1 select-all truncate text-[13px] text-muted">{label(transfer.to)} · {transfer.upiId}</span>
+        <PillButton onClick={copy} className="h-9 px-3.5 text-[13px]"><Icon name="copy" size={15} />Copy</PillButton>
+      </div>
+      <p className="px-1 text-[12.5px] text-muted">
+        UPI apps can't tell us whether you paid. After paying, record it below so everyone's balance updates.
+      </p>
+    </div>
   )
 }
 

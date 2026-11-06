@@ -19,6 +19,9 @@ public class AppUser {
 
     private String name;
 
+    /** Where this person wants to be paid (a UPI ID such as asha@okbank). Private: see ProfileDto vs UserDto. */
+    private String upiId;
+
     protected AppUser() {
     }
 
@@ -36,6 +39,15 @@ public class AppUser {
 
     public String getName() {
         return name;
+    }
+
+    public String getUpiId() {
+        return upiId;
+    }
+
+    /** Pass an already-normalised ID (see UpiId), or null to remove it. */
+    public void setUpiId(String upiId) {
+        this.upiId = upiId;
     }
 
     public void rename(String name) {
