@@ -42,6 +42,11 @@ request id; internals are never returned.
 Stateless bearer JWT (HS256) validated by Spring Security's resource server; everything except `/api/v1/auth/**` and
 health needs a token. OTP codes are stored only as HMACs under a key *derived from* (not equal to) the signing key.
 Unauthenticated endpoints are rate limited per client IP. CORS origins come from `CORS_ALLOWED_ORIGINS`.
+The client address is only trustworthy if the proxy in front is: nginx overwrites `X-Forwarded-For` with the address it saw,
+and Tomcat (`server.forward-headers-strategy=native`) reads that header from the right, skipping its own trusted proxies
+(private ranges by default; widen with `SERVER_TOMCAT_REMOTEIP_INTERNAL_PROXIES` if the proxy has a public address). Reading
+it from the left would let a client spoof its identity and bypass the limiter; `ClientAddressApiTest` runs a real server to
+prove it cannot.
 With `SPRING_PROFILES_ACTIVE=prod` the app refuses to start unless real email is enabled and CORS is not `*`.
 
 ## Data
