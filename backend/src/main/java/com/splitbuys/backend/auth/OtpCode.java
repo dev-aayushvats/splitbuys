@@ -28,6 +28,10 @@ class OtpCode {
         this.expiresAt = expiresAt;
     }
 
+    Long getId() {
+        return id;
+    }
+
     String getCodeHash() {
         return codeHash;
     }
@@ -38,13 +42,5 @@ class OtpCode {
 
     Instant getExpiresAt() {
         return expiresAt;
-    }
-
-    int getAttempts() {
-        return attempts;
-    }
-
-    void recordFailedAttempt() {
-        attempts++;
     }
 }

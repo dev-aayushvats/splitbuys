@@ -1,0 +1,40 @@
+# Isolated, repeatable load-test rig:  ./run.sh
+# Backend and database each get a fixed CPU/memory budget so results mean something ("1 vCPU / 1 GB") instead of "whatever
+# my laptop had spare". k6 runs in a container on the same network, so nothing needs installing.
+name: splitbuys-loadtest
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment: { POSTGRES_DB: splitbuys, POSTGRES_USER: splitbuys, POSTGRES_PASSWORD: loadtest }
+    cpus: 1
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U splitbuys -d splitbuys"]
+      interval: 3s
+      retries: 20
+
+  backend:
+    build: ..
+    depends_on: { db: { condition: service_healthy } }
+    cpus: ${BACKEND_CPUS:-1}
+    mem_limit: ${BACKEND_MEM:-1g}
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DATABASE_URL: jdbc:postgresql://db:5432/splitbuys
+      DATABASE_USERNAME: splitbuys
+      DATABASE_PASSWORD: loadtest
+      DATABASE_POOL_SIZE: ${POOL_SIZE:-10}
+      APP_JWT_SECRET: loadtest-secret-loadtest-secret-loadtest-secret
+    ports: ["127.0.0.1:8081:8080"]
+
+  k6:
+    image: grafana/k6:latest
+    profiles: ["load"]
+    depends_on: { backend: { condition: service_healthy } }
+    environment:
+      BASE_URL: http://backend:8080
+      JWT_SECRET: loadtest-secret-loadtest-secret-loadtest-secret
+      RATES: ${RATES:-25,50,75,100,150}
+    volumes: ["./loadtest.js:/loadtest.js:ro", "./results:/results"]
+    command: ["run", "--summary-export=/results/summary.json", "/loadtest.js"]
