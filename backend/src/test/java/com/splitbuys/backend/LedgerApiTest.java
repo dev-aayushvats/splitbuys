@@ -121,6 +121,32 @@ class LedgerApiTest extends ApiTest {
     }
 
     @Test
+    void splitValuesThatOverflowAreRefusedAndTheGroupStaysHealthy() throws Exception {
+        Session a = signIn("Asha");
+        Session b = signIn("Ben");
+        Session c = signIn("Chi");
+        long g = groupOf(a, b, c);
+        String url = "/api/v1/groups/" + g + "/expenses";
+        String max = "9223372036854775807";
+        String people = "{\"userId\":%d,\"value\":%s},{\"userId\":%d,\"value\":%s},{\"userId\":%d,\"value\":%s}";
+        String head = "{\"description\":\"x\",\"amountPaise\":100,\"payerId\":" + a.userId() + ",\"splitType\":\"%s\",\"splits\":[";
+        // three values that wrap around to exactly the total: this used to be accepted and wreck every balance
+        post(url, a, String.format(head, "EXACT") + String.format(people, a.userId(), max, b.userId(), max, c.userId(), "102") + "]}")
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        post(url, a, String.format(head, "SHARES") + String.format(people, a.userId(), "9000000000000000000", b.userId(), "9000000000000000000", c.userId(), "1") + "]}")
+                .andExpect(status().isBadRequest());
+        post(url, a, String.format(head, "PERCENT") + String.format(people, a.userId(), "9999999999999999", b.userId(), "1", c.userId(), "1") + "]}")
+                .andExpect(status().isBadRequest());
+        // a huge amount is rejected by validation before it reaches the maths
+        post(url, a, "{\"description\":\"x\",\"amountPaise\":9223372036854775807,\"payerId\":" + a.userId()
+                + ",\"splitType\":\"EQUAL\",\"splits\":[{\"userId\":" + a.userId() + "}]}").andExpect(status().isBadRequest());
+
+        get(url, a).andExpect(jsonPath("$.items.length()").value(0));
+        get("/api/v1/groups/" + g + "/balances", a).andExpect(status().isOk())
+                .andExpect(jsonPath("$.balances[0].netPaise").value(0)).andExpect(jsonPath("$.totalSpentPaise").value(0));
+    }
+
+    @Test
     void expensesListNewestFirst() throws Exception {
         Session a = signIn("Asha");
         long g = groupOf(a);

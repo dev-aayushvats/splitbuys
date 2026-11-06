@@ -13,6 +13,8 @@ import java.util.Map;
 public final class SplitCalculator {
 
     public static final long FULL_PERCENT_BP = 10_000;
+    /** Far more than any real split needs, and small enough that weight x amount can never overflow a long. */
+    public static final long MAX_SHARE_WEIGHT = 1_000_000;
 
     private SplitCalculator() {
     }
@@ -30,18 +32,29 @@ public final class SplitCalculator {
         if (values.isEmpty()) {
             throw new IllegalArgumentException("Select at least one person to split with");
         }
+        try {
+            return split(type, total, values);
+        } catch (ArithmeticException e) {
+            // defence in depth: the per-value limits below should already make this unreachable
+            throw new IllegalArgumentException("The amount or split values are too large");
+        }
+    }
+
+    private static Map<Long, Long> split(SplitType type, long total, Map<Long, Long> values) {
+        // Every value is bounded BEFORE anything is added or multiplied. Unbounded client input would otherwise let three
+        // huge values add up (by wrapping around) to exactly the total and slip past the "must add up" checks.
         return switch (type) {
             case EQUAL -> proportional(total, equalWeights(values));
-            case SHARES -> proportional(total, requireNonNegative(values, "Shares"));
+            case SHARES -> proportional(total, requireInRange(values, "Shares", MAX_SHARE_WEIGHT, "Shares cannot be more than 1,000,000 each"));
             case PERCENT -> {
-                requireNonNegative(values, "Percentages");
+                requireInRange(values, "Percentages", FULL_PERCENT_BP, "A percentage cannot be more than 100");
                 if (sum(values) != FULL_PERCENT_BP) {
                     throw new IllegalArgumentException("Percentages must add up to 100");
                 }
                 yield proportional(total, values);
             }
             case EXACT -> {
-                requireNonNegative(values, "Amounts");
+                requireInRange(values, "Amounts", total, "An amount cannot be more than the total");
                 if (sum(values) != total) {
                     throw new IllegalArgumentException("Amounts must add up to the total");
                 }
@@ -62,17 +75,24 @@ public final class SplitCalculator {
         return weights;
     }
 
-    private static Map<Long, Long> requireNonNegative(Map<Long, Long> values, String what) {
+    private static Map<Long, Long> requireInRange(Map<Long, Long> values, String what, long max, String tooBig) {
         for (Long v : values.values()) {
             if (v == null || v < 0) {
                 throw new IllegalArgumentException(what + " cannot be negative");
+            }
+            if (v > max) {
+                throw new IllegalArgumentException(tooBig);
             }
         }
         return values;
     }
 
     private static long sum(Map<Long, Long> values) {
-        return values.values().stream().mapToLong(Long::longValue).sum();
+        long total = 0;
+        for (long v : values.values()) {
+            total = Math.addExact(total, v); // never wrap silently
+        }
+        return total;
     }
 
     private static Map<Long, Long> proportional(long total, Map<Long, Long> weights) {
