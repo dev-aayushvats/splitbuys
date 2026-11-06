@@ -1,10 +1,12 @@
 import type {
-  Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Settlement, User,
+  Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Settlement, User,
 } from './types'
 
 // Unset (dev): the local backend. Set to an empty string (the Docker image does this): same origin, i.e. calls go to /api on
 // whichever host served the app, where a reverse proxy forwards them to the backend.
 export const API_URL: string = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+
+const PAGE_SIZE = 30
 
 export class ApiError extends Error {
   status?: number
@@ -64,11 +66,14 @@ export const api = {
   previewInvite: (t: string) => send<InvitePreview>('GET', `/invites/${t}`),
   joinInvite: (t: string) => send<GroupDetail>('POST', `/invites/${t}/join`),
 
-  expenses: (g: number) => send<Expense[]>('GET', `/groups/${g}/expenses`),
+  expenses: (g: number, cursor?: string | null) =>
+    send<Page<Expense>>('GET', `/groups/${g}/expenses?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
+  expense: (g: number, e: number) => send<Expense>('GET', `/groups/${g}/expenses/${e}`),
   addExpense: (g: number, b: ExpenseBody) => send<void>('POST', `/groups/${g}/expenses`, b),
   updateExpense: (g: number, e: number, b: ExpenseBody) => send<void>('PUT', `/groups/${g}/expenses/${e}`, b),
   deleteExpense: (g: number, e: number) => send<void>('DELETE', `/groups/${g}/expenses/${e}`),
-  settlements: (g: number) => send<Settlement[]>('GET', `/groups/${g}/settlements`),
+  settlements: (g: number, cursor?: string | null) =>
+    send<Page<Settlement>>('GET', `/groups/${g}/settlements?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
   addSettlement: (g: number, fromUserId: number, toUserId: number, amountPaise: number) =>
     send<void>('POST', `/groups/${g}/settlements`, { fromUserId, toUserId, amountPaise }),
   deleteSettlement: (g: number, s: number) => send<void>('DELETE', `/groups/${g}/settlements/${s}`),
@@ -78,6 +83,10 @@ export const api = {
     const [group, expenses, settlements, balances] = await Promise.all([
       api.group(id), api.expenses(id), api.settlements(id), api.balances(id),
     ])
-    return { group, expenses, settlements, balances }
+    return {
+      group, balances,
+      expenses: expenses.items, expensesCursor: expenses.nextCursor,
+      settlements: settlements.items, settlementsCursor: settlements.nextCursor,
+    }
   },
 }

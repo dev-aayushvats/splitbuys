@@ -20,12 +20,16 @@ export interface Expense {
 export interface Settlement { id: number; fromUser: User; toUser: User; amountPaise: number; createdAt: string }
 export interface Balance { user: User; netPaise: number }
 export interface Transfer { from: User; to: User; amountPaise: number }
-export interface Balances { balances: Balance[]; settleUp: Transfer[] }
+export interface Balances { balances: Balance[]; settleUp: Transfer[]; totalSpentPaise: number }
+export interface Page<T> { items: T[]; nextCursor: string | null }
 
+// the first page of expenses and payments; the cursors say whether (and where) older ones can be loaded
 export interface GroupData {
   group: GroupDetail
   expenses: Expense[]
+  expensesCursor: string | null
   settlements: Settlement[]
+  settlementsCursor: string | null
   balances: Balances
 }
 

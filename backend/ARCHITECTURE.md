@@ -72,12 +72,20 @@ It refuses incomplete files and a schema-version mismatch, takes a `pre-restore`
 replace, and runs in one transaction (all or nothing). Backups on the app server's disk do not survive losing that disk;
 for real disaster recovery copy them off-box (and Neon's own point-in-time restore covers the database itself).
 
+## Pagination
+
+`GET .../expenses` and `GET .../settlements` return `{items, nextCursor}`, newest first (`?limit=` 1-100, default 50;
+`?cursor=` from the previous page). Keyset ("seek") pagination on `(created_at, id)`, not offsets: rows added while someone
+is paging cannot repeat or skip anything, and the cost of a page does not grow with how far back it is. `id` breaks ties
+between rows with the same timestamp. It is done in two steps (page the ids in SQL, then load the rows with their shares),
+because a SQL `LIMIT` combined with a collection fetch makes Hibernate page in memory, which loads the whole history.
+Group totals come from the balances endpoint (`totalSpentPaise`), so clients need not download everything to add it up.
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.
 
 ## Not done yet (known gaps)
 
-* List endpoints are not paginated.
 * The rate limiter is in-memory (single instance); use a gateway or Redis to scale out.
 * Token revocation / refresh tokens.

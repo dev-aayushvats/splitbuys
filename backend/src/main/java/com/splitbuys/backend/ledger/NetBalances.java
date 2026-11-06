@@ -36,6 +36,11 @@ class NetBalances implements LedgerPort {
         return net;
     }
 
+    @Transactional(readOnly = true)
+    long totalSpent(long groupId) {
+        return expenses.totalSpent(groupId);
+    }
+
     @Override
     @Transactional
     public void purge(long groupId) {

@@ -39,6 +39,6 @@ public class BalanceService {
                 .map(t -> new TransferDto(UserDto.from(byId.get(t.fromUserId())), UserDto.from(byId.get(t.toUserId())),
                         t.amountPaise()))
                 .toList();
-        return new BalancesResponse(balances, settleUp);
+        return new BalancesResponse(balances, settleUp, netBalances.totalSpent(groupId));
     }
 }

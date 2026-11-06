@@ -1,8 +1,9 @@
 package com.splitbuys.backend.ledger;
 
 import com.splitbuys.backend.common.security.CurrentUser;
+import com.splitbuys.backend.common.web.PageCursor;
+import com.splitbuys.backend.common.web.PageResponse;
 import jakarta.validation.Valid;
-import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -26,8 +28,15 @@ class LedgerController {
     }
 
     @GetMapping("/expenses")
-    List<ExpenseDto> expenses(@CurrentUser long userId, @PathVariable long groupId) {
-        return ledger.listExpenses(groupId, userId);
+    PageResponse<ExpenseDto> expenses(@CurrentUser long userId, @PathVariable long groupId,
+                                      @RequestParam(defaultValue = "" + PageCursor.DEFAULT_LIMIT) int limit,
+                                      @RequestParam(required = false) String cursor) {
+        return ledger.listExpenses(groupId, userId, limit, cursor);
+    }
+
+    @GetMapping("/expenses/{expenseId}")
+    ExpenseDto expense(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long expenseId) {
+        return ledger.getExpense(groupId, expenseId, userId);
     }
 
     @PostMapping("/expenses")
@@ -49,8 +58,10 @@ class LedgerController {
     }
 
     @GetMapping("/settlements")
-    List<SettlementDto> settlements(@CurrentUser long userId, @PathVariable long groupId) {
-        return ledger.listSettlements(groupId, userId);
+    PageResponse<SettlementDto> settlements(@CurrentUser long userId, @PathVariable long groupId,
+                                            @RequestParam(defaultValue = "" + PageCursor.DEFAULT_LIMIT) int limit,
+                                            @RequestParam(required = false) String cursor) {
+        return ledger.listSettlements(groupId, userId, limit, cursor);
     }
 
     @PostMapping("/settlements")

@@ -29,11 +29,11 @@ class LedgerApiTest extends ApiTest {
         put("/api/v1/groups/" + g + "/expenses/" + e, b, equalExpense("Big lunch", 800, b.userId(), a.userId(), b.userId()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.description").value("Big lunch"))
                 .andExpect(jsonPath("$.payer.id").value(b.userId()));
-        get("/api/v1/groups/" + g + "/expenses", a).andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].shares.length()").value(2));
+        get("/api/v1/groups/" + g + "/expenses", a).andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.items[0].shares.length()").value(2));
 
         delete("/api/v1/groups/" + g + "/expenses/" + e, a).andExpect(status().isNoContent());
-        get("/api/v1/groups/" + g + "/expenses", a).andExpect(jsonPath("$.length()").value(0));
+        get("/api/v1/groups/" + g + "/expenses", a).andExpect(jsonPath("$.items.length()").value(0));
         delete("/api/v1/groups/" + g + "/expenses/" + e, a).andExpect(status().isNotFound());
     }
 
@@ -107,14 +107,28 @@ class LedgerApiTest extends ApiTest {
     }
 
     @Test
+    void oneExpenseCanBeReadByMembersOnly() throws Exception {
+        Session a = signIn("Asha");
+        Session z = signIn("Zed");
+        long mine = groupOf(a);
+        long theirs = groupOf(z);
+        long e = id(post("/api/v1/groups/" + mine + "/expenses", a, equalExpense("Lunch", 600, a.userId(), a.userId())).andExpect(status().isCreated()), "$.id");
+        get("/api/v1/groups/" + mine + "/expenses/" + e, a).andExpect(status().isOk())
+                .andExpect(jsonPath("$.description").value("Lunch")).andExpect(jsonPath("$.shares.length()").value(1));
+        get("/api/v1/groups/" + mine + "/expenses/" + e, z).andExpect(status().isNotFound());       // not a member
+        get("/api/v1/groups/" + theirs + "/expenses/" + e, z).andExpect(status().isNotFound());     // wrong group
+        get("/api/v1/groups/" + mine + "/expenses/999999", a).andExpect(status().isNotFound());
+    }
+
+    @Test
     void expensesListNewestFirst() throws Exception {
         Session a = signIn("Asha");
         long g = groupOf(a);
         for (String d : new String[] {"first", "second", "third"}) {
             post("/api/v1/groups/" + g + "/expenses", a, equalExpense(d, 100, a.userId(), a.userId())).andExpect(status().isCreated());
         }
-        get("/api/v1/groups/" + g + "/expenses", a).andExpect(jsonPath("$[0].description").value("third"))
-                .andExpect(jsonPath("$[2].description").value("first"));
+        get("/api/v1/groups/" + g + "/expenses", a).andExpect(jsonPath("$.items[0].description").value("third"))
+                .andExpect(jsonPath("$.items[2].description").value("first"));
     }
 
     @Test
