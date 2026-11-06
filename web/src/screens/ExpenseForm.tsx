@@ -22,8 +22,8 @@ export function ExpenseFormScreen() {
   const gid = Number(params.id)
   const expenseId = params.expenseId ? Number(params.expenseId) : null
   const { data, error, loading, reload } = useAsync(async () => {
-    const [group, expenses] = await Promise.all([api.group(gid), expenseId ? api.expenses(gid) : Promise.resolve([] as Expense[])])
-    return { group, expense: expenseId ? expenses.find((e) => e.id === expenseId) ?? null : null }
+    const [group, expense] = await Promise.all([api.group(gid), expenseId ? api.expense(gid, expenseId) : Promise.resolve(null)])
+    return { group, expense }
   }, [gid, expenseId])
 
   if (!data) {

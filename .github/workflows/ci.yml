@@ -1,7 +1,13 @@
 name: CI
 on:
+  pull_request:
   push:
-    branches: [prod]
+    branches: [main, prod]
+
+# a newer push to the same branch/PR cancels the run it supersedes
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   backend:
@@ -11,7 +17,16 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17, cache: maven }
-      - run: ./mvnw -B verify   # unit, integration and architecture tests
+      - run: ./mvnw -B verify   # unit, integration and architecture tests, then the JaCoCo report
+      - name: Coverage summary
+        if: always()
+        run: |
+          f=target/site/jacoco/jacoco.csv
+          [ -f "$f" ] && awk -F, 'NR>1 {m+=$8; c+=$9; bm+=$6; bc+=$7} END {
+            printf "### Backend coverage\n\n| Metric | Covered |\n|---|---|\n| Lines | %.1f%% |\n| Branches | %.1f%% |\n", 100*c/(m+c), 100*bc/(bm+bc) }' "$f" >> "$GITHUB_STEP_SUMMARY" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: backend-coverage, path: backend/target/site/jacoco, if-no-files-found: ignore }
 
   web:
     runs-on: ubuntu-latest

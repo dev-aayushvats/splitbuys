@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { dayLabel, formatDate, formatPaise, hundredthsToInput, parseHundredths } from '../lib/money'
-import { label, type Expense, type GroupData, type Transfer, type User } from '../lib/types'
+import { mergeTimeline } from '../lib/timeline'
+import { label, type Expense, type GroupData, type Settlement, type Transfer, type User } from '../lib/types'
 import {
   Avatar, AvatarStack, Dashed, Dock, EmptyState, ErrorRetry, Field, Icon, IconBadge, InfoCard, PillButton, RoundButton, Screen,
   SectionTitle, Sheet, Skeleton, Tile, TopBar, tap, inputCls, useAsync, useFeedback,
@@ -41,7 +42,7 @@ export function GroupScreen() {
     )
   }
 
-  const total = data.expenses.reduce((s, e) => s + e.amountPaise, 0)
+  const total = data.balances.totalSpentPaise // from the server: the list below is only the newest page
   const mine = data.balances.balances.find((b) => b.user.id === me.id)?.netPaise ?? 0
 
   return (
@@ -145,10 +146,35 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
   const gid = data.group.id
   const [detail, setDetail] = useState<Expense | null>(null)
 
-  const items = [
-    ...data.expenses.map((e) => ({ at: e.createdAt, node: expenseTile(e) })),
-    ...data.settlements.map((s) => ({ at: s.createdAt, node: settlementTile(s) })),
-  ].sort((a, b) => b.at.localeCompare(a.at))
+  // First page comes with the group data; "Load more" appends older pages. A reload (after any change) starts over.
+  const [older, setOlder] = useState<{ expenses: Expense[]; settlements: Settlement[]; eCursor: string | null; sCursor: string | null } | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  useEffect(() => setOlder(null), [data])
+  const expenses = [...data.expenses, ...(older?.expenses ?? [])]
+  const settlements = [...data.settlements, ...(older?.settlements ?? [])]
+  const eCursor = older ? older.eCursor : data.expensesCursor
+  const sCursor = older ? older.sCursor : data.settlementsCursor
+
+  async function loadMore() {
+    setLoadingMore(true)
+    try {
+      const [e, s] = await Promise.all([
+        eCursor ? api.expenses(gid, eCursor) : null,
+        sCursor ? api.settlements(gid, sCursor) : null,
+      ])
+      setOlder({
+        expenses: [...(older?.expenses ?? []), ...(e?.items ?? [])],
+        settlements: [...(older?.settlements ?? []), ...(s?.items ?? [])],
+        eCursor: e ? e.nextCursor : eCursor,
+        sCursor: s ? s.nextCursor : sCursor,
+      })
+    } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
+    setLoadingMore(false)
+  }
+
+  const items = mergeTimeline(expenses, eCursor !== null, settlements, sCursor !== null)
+    .map((i) => ({ at: i.at, node: i.kind === 'expense' ? expenseTile(i.item) : settlementTile(i.item) }))
+  const hasMore = eCursor !== null || sCursor !== null
 
   function expenseTile(e: GroupData['expenses'][number]) {
     const myShare = e.shares.filter((s) => s.user.id === me.id).reduce((a, s) => a + s.amountPaise, 0)
@@ -185,7 +211,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
     )
   }
 
-  if (items.length === 0) {
+  if (items.length === 0 && !hasMore) {
     return <EmptyState icon="receipt" title="No expenses yet">Tap the + button to add the first one.</EmptyState>
   }
   const days: { day: string; nodes: React.ReactNode[] }[] = []
@@ -209,6 +235,12 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
           <div className="stagger space-y-3">{d.nodes}</div>
         </section>
       ))}
+      {hasMore && (
+        <button type="button" onClick={loadMore} disabled={loadingMore}
+          className="glass-lite w-full rounded-full py-3.5 font-semibold disabled:opacity-60">
+          {loadingMore ? 'Loading…' : 'Load older'}
+        </button>
+      )}
     </div>
   )
 }
@@ -266,7 +298,7 @@ function BalancesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
             <Tile key={i} leading={<AvatarStack users={[t.from, t.to]} size={34} max={2} />}
               title={`${who(t.from, me)} ${t.from.id === me.id ? 'pay' : 'pays'} ${t.to.id === me.id ? 'you' : label(t.to)}`}
               subtitle={formatPaise(t.amountPaise)}
-              trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPaying(t)}>Record</PillButton>} />
+              trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPaying(t)}>{t.upiLink ? 'Pay' : 'Record'}</PillButton>} />
           ))}
         </Dashed>
       </section>
@@ -304,8 +336,36 @@ function PaymentSheet({ transfer, me, onClose, onSubmit }: {
 }) {
   return (
     <Sheet open={!!transfer} onClose={onClose} title={transfer ? `${who(transfer.from, me)} → ${who(transfer.to, me)}` : ''}>
-      {transfer && <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />}
+      {transfer && (
+        <div className="space-y-5">
+          {transfer.upiLink && <UpiPay transfer={transfer} />}
+          <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />
+        </div>
+      )}
     </Sheet>
+  )
+}
+
+/** Opens the user's UPI app with the receiver and amount filled in. It cannot tell whether the payment happened. */
+function UpiPay({ transfer }: { transfer: Transfer }) {
+  const { toast } = useFeedback()
+  async function copy() {
+    try { await navigator.clipboard.writeText(transfer.upiId!); toast('UPI ID copied') } catch { toast('Could not copy') }
+  }
+  return (
+    <div className="space-y-3">
+      <a href={transfer.upiLink!} onClick={tap}
+        className="btn-accent flex h-13 w-full items-center justify-center gap-2 rounded-full py-3.5 font-bold">
+        <Icon name="payments" size={20} /> Pay {formatPaise(transfer.amountPaise)} via UPI
+      </a>
+      <div className="flex items-center gap-2 rounded-[20px] bg-black/25 py-1.5 pl-3.5 pr-1.5 ring-1 ring-white/10">
+        <span className="min-w-0 flex-1 select-all truncate text-[13px] text-muted">{label(transfer.to)} · {transfer.upiId}</span>
+        <PillButton onClick={copy} className="h-9 px-3.5 text-[13px]"><Icon name="copy" size={15} />Copy</PillButton>
+      </div>
+      <p className="px-1 text-[12.5px] text-muted">
+        UPI apps can't tell us whether you paid. After paying, record it below so everyone's balance updates.
+      </p>
+    </div>
   )
 }
 

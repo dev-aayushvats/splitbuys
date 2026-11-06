@@ -104,13 +104,13 @@ public class OtpService {
         if (otp.getExpiresAt().isBefore(clock.instant())) {
             throw new InvalidRequestException("Code expired, request a new one");
         }
-        if (otp.getAttempts() >= maxAttempts) {
+        // spend a guess before comparing, atomically, so concurrent requests cannot out-guess the limit
+        if (otps.claimAttempt(otp.getId(), maxAttempts) == 0) {
             throw new RateLimitedException("Too many attempts, request a new code");
         }
         String given = code == null ? "" : code.trim();
         if (!MessageDigest.isEqual(hash(email, given).getBytes(StandardCharsets.UTF_8),
                 otp.getCodeHash().getBytes(StandardCharsets.UTF_8))) {
-            otp.recordFailedAttempt();
             throw new InvalidRequestException("Incorrect code");
         }
         otps.delete(otp);

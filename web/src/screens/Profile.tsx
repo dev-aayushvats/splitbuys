@@ -1,15 +1,20 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { label } from '../lib/types'
+import { isValidUpi, normalizeUpi } from '../lib/upi'
 import { Avatar, Field, Icon, Screen, TopBar, inputCls, useFeedback } from '../ui'
 
 export function ProfileScreen() {
-  const { user, setName, signOut } = useAuth()
+  const { user, setName, setUpi, clearUpi, signOut } = useAuth()
   const { toast, confirm } = useFeedback()
   const me = user!
   const [name, setNameText] = useState(me.name ?? '')
   const [busy, setBusy] = useState(false)
   const changed = name.trim() !== (me.name ?? '') && name.trim() !== ''
+  const [upi, setUpiText] = useState(me.upiId ?? '')
+  const [upiBusy, setUpiBusy] = useState(false)
+  const upiChanged = normalizeUpi(upi) !== (me.upiId ?? '')
+  const upiInvalid = upi.trim() !== '' && !isValidUpi(upi)
 
   async function save(e: FormEvent) {
     e.preventDefault()
@@ -17,6 +22,21 @@ export function ProfileScreen() {
     setBusy(true)
     try { await setName(name.trim()); toast('Name updated') } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
     setBusy(false)
+  }
+
+  async function saveUpi(e: FormEvent) {
+    e.preventDefault()
+    if (!upiChanged || upiInvalid || upi.trim() === '') return
+    setUpiBusy(true)
+    try { await setUpi(normalizeUpi(upi)); setUpiText(normalizeUpi(upi)); toast('UPI ID saved') } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
+    setUpiBusy(false)
+  }
+
+  async function removeUpi() {
+    if (!(await confirm('Remove your UPI ID?\nPeople will no longer get a pay link for you.', 'Remove'))) return
+    setUpiBusy(true)
+    try { await clearUpi(); setUpiText(''); toast('UPI ID removed') } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
+    setUpiBusy(false)
   }
 
   return (
@@ -36,6 +56,25 @@ export function ProfileScreen() {
           className="btn-accent h-13 w-full rounded-full py-3.5 font-bold disabled:bg-none disabled:bg-white/10 disabled:text-muted disabled:shadow-none">
           Save
         </button>
+      </form>
+
+      <form onSubmit={saveUpi} className="mt-8 space-y-3 px-5">
+        <Field label="UPI ID for receiving money">
+          <input className={inputCls} inputMode="email" autoCapitalize="none" autoCorrect="off" spellCheck={false}
+            placeholder="name@bank" value={upi} onChange={(e) => setUpiText(e.target.value)} />
+        </Field>
+        {upiInvalid
+          ? <p className="px-1 text-sm text-neg">Enter a valid UPI ID, like name@bank</p>
+          : <p className="px-1 text-[12.5px] text-muted">Shown only to people who owe you, as a pay link when they settle up.</p>}
+        <div className="flex gap-3">
+          {me.upiId && (
+            <button type="button" onClick={removeUpi} disabled={upiBusy} className="glass-lite rounded-full px-5 py-3.5 font-semibold text-neg">Remove</button>
+          )}
+          <button type="submit" disabled={!upiChanged || upiInvalid || upi.trim() === '' || upiBusy}
+            className="btn-accent h-13 flex-1 rounded-full py-3.5 font-bold disabled:bg-none disabled:bg-white/10 disabled:text-muted disabled:shadow-none">
+            {me.upiId ? 'Update UPI ID' : 'Save UPI ID'}
+          </button>
+        </div>
       </form>
 
       <div className="mt-auto px-5 pb-6 pt-10">

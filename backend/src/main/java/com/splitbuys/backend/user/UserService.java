@@ -22,15 +22,30 @@ public class UserService {
         return users.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
     }
 
-    public UserDto get(long id) {
-        return UserDto.from(require(id));
+    public ProfileDto get(long id) {
+        return ProfileDto.from(require(id));
     }
 
     @Transactional
-    public UserDto rename(long id, String name) {
+    public ProfileDto rename(long id, String name) {
         AppUser user = require(id);
         user.rename(name);
-        return UserDto.from(user);
+        return ProfileDto.from(user);
+    }
+
+    /** Sets or replaces where the user wants to be paid. */
+    @Transactional
+    public ProfileDto setUpiId(long id, String upiId) {
+        AppUser user = require(id);
+        user.setUpiId(UpiId.normalize(upiId));
+        return ProfileDto.from(user);
+    }
+
+    @Transactional
+    public ProfileDto clearUpiId(long id) {
+        AppUser user = require(id);
+        user.setUpiId(null);
+        return ProfileDto.from(user);
     }
 
     @Transactional
