@@ -4,7 +4,12 @@
 #   SSH_TARGET=root@your.host SSH_KEY=~/.ssh/your_key deploy/deploy.sh [--dry-run] [--skip-build]
 #
 # Optional: APP_DIR (default /var/opt/splitbuys-back), SERVICE (default myapp), API_URL (public URL to check afterwards),
-#           ALLOW_DIRTY=1 (deploy even with uncommitted changes; normally refused so the jar matches a commit).
+#           ALLOW_DIRTY=1 (deploy even with uncommitted changes; normally refused so the jar matches a commit),
+#           ALLOW_NON_MAIN=1 (deploy a checkout that is not origin/main, e.g. a hotfix branch; normally refused),
+#           DEPLOY_REMOTE / DEPLOY_BRANCH (default origin / main).
+#
+# Safety: a jar is built from whatever is checked out, so the script refuses to run unless the checkout is clean and is
+# exactly origin/main. Without that, a stale local main would quietly ship old code.
 set -euo pipefail
 
 DRY=0
@@ -37,6 +42,27 @@ COMMIT="$(git -C "$ROOT" rev-parse --short HEAD)"
 if [[ -n "$(git -C "$ROOT" status --porcelain)" && "${ALLOW_DIRTY:-0}" != "1" ]]; then
   echo "Uncommitted changes: refusing to deploy a jar that does not match a commit (ALLOW_DIRTY=1 to override)." >&2
   exit 1
+fi
+REMOTE_NAME="${DEPLOY_REMOTE:-origin}"
+BRANCH="${DEPLOY_BRANCH:-main}"
+if [[ "${ALLOW_NON_MAIN:-0}" != "1" ]]; then
+  if ! git -C "$ROOT" fetch -q "$REMOTE_NAME" "$BRANCH"; then
+    echo "Could not fetch $REMOTE_NAME/$BRANCH, so I cannot tell whether this checkout is current. Refusing (ALLOW_NON_MAIN=1 skips this check)." >&2
+    exit 1
+  fi
+  HEAD_SHA="$(git -C "$ROOT" rev-parse HEAD)"
+  MAIN_SHA="$(git -C "$ROOT" rev-parse "$REMOTE_NAME/$BRANCH")"
+  if [[ "$HEAD_SHA" != "$MAIN_SHA" ]]; then
+    if git -C "$ROOT" merge-base --is-ancestor HEAD "$REMOTE_NAME/$BRANCH"; then
+      BEHIND="$(git -C "$ROOT" rev-list --count "HEAD..$REMOTE_NAME/$BRANCH")"
+      echo "This checkout is $BEHIND commit(s) behind $REMOTE_NAME/$BRANCH: deploying it would ship OLD code." >&2
+      echo "Run: git checkout $BRANCH && git pull" >&2
+    else
+      echo "This checkout (${HEAD_SHA:0:7}) is not $REMOTE_NAME/$BRANCH (${MAIN_SHA:0:7}). Only merged code should be deployed." >&2
+      echo "Merge it first, or set ALLOW_NON_MAIN=1 to deploy it anyway (e.g. a hotfix)." >&2
+    fi
+    exit 1
+  fi
 fi
 echo "Deploying commit $COMMIT to $SSH_TARGET:$APP_DIR"
 
