@@ -1,0 +1,23 @@
+[Unit]
+Description=Spring Boot Bill Splitting Backend
+After=network.target
+
+[Service]
+User=springapp
+WorkingDirectory=/var/opt/splitbuys-back
+# secrets and JVM flags live here (mode 600, owned by springapp); see application.env.example
+EnvironmentFile=/var/opt/splitbuys-back/application.env
+# $JAVA_OPTS is split into words by systemd
+ExecStart=/usr/bin/java $JAVA_OPTS -jar /var/opt/splitbuys-back/app.jar
+# the JVM exits with 143 on SIGTERM; that is a clean stop
+SuccessExitStatus=143
+# also restarts after -XX:+ExitOnOutOfMemoryError
+Restart=always
+RestartSec=10
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
