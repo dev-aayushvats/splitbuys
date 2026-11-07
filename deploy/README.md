@@ -48,6 +48,16 @@ SSH_TARGET=root@your.host SSH_KEY=~/.ssh/your_key API_URL=https://api.<your doma
 - A migration runs when the new jar starts (Flyway). Migrations here are additive, so rolling the jar back is safe; it is not a
   database rollback. Take a backup first when a release adds one: `POST /api/v1/admin/backups` (see `backend/ARCHITECTURE.md`).
 
+## The web app on Cloudflare
+Cloudflare builds the `web/` folder from git. `web/public/_headers` ships into the build and sets the security headers, the
+cache rules and a strict Content-Security-Policy. Two things must stay in step:
+- `VITE_API_URL` (the Cloudflare build variable) and the `connect-src` host in `web/public/_headers`. If the API host changes,
+  change both, or the browser blocks every API call. A build without `VITE_API_URL` falls back to `http://localhost:8080`,
+  which the CSP also blocks.
+- The API's `CORS_ALLOWED_ORIGINS` must list the web origin(s).
+
+After changing the CSP, test it in a real browser: a policy that is too strict breaks the page silently.
+
 ## Rolling back by hand
 ```
 mv /var/opt/splitbuys-back/app.jar.prev /var/opt/splitbuys-back/app.jar && systemctl restart myapp

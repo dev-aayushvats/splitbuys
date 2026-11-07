@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -67,12 +67,11 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   )
   const [busy, setBusy] = useState(false)
 
-  const nameOf = (id: number) => label(members.find((m) => m.id === id)!)
+  const nameOf = useCallback((id: number) => label(members.find((m) => m.id === id)!), [members])
 
   const result = useMemo(
     () => evaluateSplit({ amount, description, kind, ids: members.map((m) => m.id).filter((id) => selected.has(id)), values, nameOf }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [amount, description, selected, kind, values, members],
+    [amount, description, selected, kind, values, members, nameOf],
   )
 
   function pickKind(k: SplitType) {
@@ -145,7 +144,8 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
               <PersonRow key={m.id} user={m} name={m.id === me.id ? `${label(m)} (you)` : label(m)} selected={selected.has(m.id)}
                 onToggle={() => toggle(m.id)}
                 field={kind !== 'EQUAL' && selected.has(m.id) ? (
-                  <div className="relative w-28" onClick={(e) => e.stopPropagation()}>
+                  // biome-ignore lint/a11y/noStaticElementInteractions: this wrapper only stops the click reaching the row toggle underneath
+                  <div role="presentation" className="relative w-28" onClick={(e) => e.stopPropagation()}>
                     <input aria-label={`${label(m)} ${kind.toLowerCase()}`} inputMode={kind === 'SHARES' ? 'numeric' : 'decimal'}
                       placeholder={kind === 'SHARES' ? '1' : '0'} value={values[m.id] ?? ''}
                       onChange={(e) => setValues((v) => ({ ...v, [m.id]: e.target.value }))}
@@ -171,8 +171,14 @@ function PersonRow({ user, name, selected, onToggle, field }: {
   user: User; name: string; selected: boolean; onToggle: () => void; field: React.ReactNode
 }) {
   return (
+    // biome-ignore lint/a11y/useSemanticElements: a whole selectable row, with its own keyboard handling and aria-checked
     <div role="checkbox" aria-checked={selected} tabIndex={0} onClick={onToggle}
-      onKeyDown={(e) => (e.key === ' ' || e.key === 'Enter') && (e.preventDefault(), onToggle())}
+      onKeyDown={(e) => {
+        if (e.key === ' ' || e.key === 'Enter') {
+          e.preventDefault()
+          onToggle()
+        }
+      }}
       className={`glass-lite flex items-center gap-3 rounded-[24px] py-2.5 pl-3 pr-3.5 transition-shadow ${selected ? 'shadow-[0_0_0_1.5px_rgb(250_210_70/0.6)]' : ''}`}>
       <div className={selected ? '' : 'opacity-40'}><Avatar user={user} size={40} /></div>
       <span className={`min-w-0 flex-1 truncate font-semibold ${selected ? '' : 'text-muted'}`}>{name}</span>

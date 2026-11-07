@@ -65,4 +65,5 @@ npm install
 npm run dev        # http://localhost:5555, API defaults to http://localhost:8080 (set VITE_API_URL to change)
 npm run build      # production build in dist/ (service worker + manifest included)
 npm test
+npm run lint       # Biome: correctness and accessibility rules (the formatter is deliberately off)
 ```
