@@ -36,7 +36,11 @@ browser ──https──> api.<your domain>  (DNS goes straight to the droplet)
 ```
 SSH_TARGET=root@your.host SSH_KEY=~/.ssh/your_key API_URL=https://api.<your domain> deploy/deploy.sh
 ```
-- Refuses to run with uncommitted changes, so the jar always matches a commit. Deploy from `main` after the PR is merged.
+- Refuses to run unless the checkout is **clean and exactly `origin/main`** (it fetches first). A jar is built from whatever is
+  checked out, so a stale local `main` would otherwise quietly ship old code. If you are behind it tells you to
+  `git checkout main && git pull`; if the commit is not on `origin/main` it tells you to merge first.
+  `ALLOW_NON_MAIN=1` deploys another commit on purpose (a hotfix); `ALLOW_DIRTY=1` allows uncommitted changes. If the fetch
+  fails (offline) it refuses, because it cannot tell whether the checkout is current.
 - Builds and tests (`./mvnw verify`), uploads, verifies the checksum on the server, installs the jar, restarts, and polls
   `/actuator/health/liveness` for up to 150 seconds. If the app never turns healthy it restores the previous jar by itself.
 - Expect about 30 seconds of downtime on a 512 MB droplet.
