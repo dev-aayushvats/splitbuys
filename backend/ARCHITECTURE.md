@@ -77,6 +77,32 @@ It refuses incomplete files and a schema-version mismatch, takes a `pre-restore`
 replace, and runs in one transaction (all or nothing). Backups on the app server's disk do not survive losing that disk;
 for real disaster recovery copy them off-box (and Neon's own point-in-time restore covers the database itself).
 
+## Deployment: Cloudflare in front of a droplet
+
+Frontend on Cloudflare, backend on a droplet, reached through a **Cloudflare Tunnel** (`cloudflared` on the droplet connects out
+to Cloudflare, so no inbound port is open and only Cloudflare can reach the app). The browser calls the API directly at
+`https://api.<your domain>` (cross-origin, so `CORS_ALLOWED_ORIGINS` must be the web origin and the web build needs
+`VITE_API_URL=https://api.<your domain>`).
+
+* Run only the backend there: `docker compose up -d --build backend` (it already listens on 127.0.0.1:8080 only).
+* `SPRING_PROFILES_ACTIVE=prod,postgres`, `MAIL_ENABLED=true`, `CORS_ALLOWED_ORIGINS=<web origin>`, and
+  `CLIENT_IP_HEADER=CF-Connecting-IP`, so the rate limiter sees the real visitor. Cloudflare sets that header itself and discards
+  any value a visitor sends. **Only safe because nothing but the tunnel can reach port 8080**; never set it with the port exposed.
+* Keep `/api/v1/admin/**` off the public internet. In the tunnel config, answer it before the main rule:
+
+```yaml
+ingress:
+  - hostname: api.example.com
+    path: ^/api/v1/admin
+    service: http_status:404
+  - hostname: api.example.com
+    service: http://127.0.0.1:8080
+  - service: http_status:404
+```
+
+Run admin calls (backups) on the droplet against `127.0.0.1:8080` with the `X-Admin-Token` header. Check the current Cloudflare
+documentation for tunnel setup and ingress syntax.
+
 ## Pagination
 
 `GET .../expenses` and `GET .../settlements` return `{items, nextCursor}`, newest first (`?limit=` 1-100, default 50;
