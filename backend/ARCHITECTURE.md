@@ -77,6 +77,12 @@ It refuses incomplete files and a schema-version mismatch, takes a `pre-restore`
 replace, and runs in one transaction (all or nothing). Backups on the app server's disk do not survive losing that disk;
 for real disaster recovery copy them off-box (and Neon's own point-in-time restore covers the database itself).
 
+## Deployment
+
+Production runs the jar under systemd on a small droplet behind nginx, with PostgreSQL on Neon. The unit, env template, nginx
+config, one-time hardening script and a deploy script that rolls back by itself are in [`/deploy`](../deploy/README.md), together
+with what was learned about memory sizing and client-address handling.
+
 ## Pagination
 
 `GET .../expenses` and `GET .../settlements` return `{items, nextCursor}`, newest first (`?limit=` 1-100, default 50;
