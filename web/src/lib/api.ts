@@ -1,6 +1,7 @@
 import type {
   Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Profile, Settlement,
 } from './types'
+import { fetchWithRetry, parseBody, RequestTimeoutError } from './http'
 
 // Unset (dev): the local backend. Set to an empty string (the Docker image does this): same origin, i.e. calls go to /api on
 // whichever host served the app, where a reverse proxy forwards them to the backend.
@@ -30,16 +31,22 @@ export function setToken(t: string | null) {
 async function send<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
   let res: Response
   try {
-    res = await fetch(`${API_URL}/api/v1${path}`, {
+    res = await fetchWithRetry(fetch, `${API_URL}/api/v1${path}`, {
       method,
       headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
-  } catch {
+  } catch (e) {
+    if (e instanceof RequestTimeoutError) {
+      throw new ApiError(method === 'GET'
+        ? 'The server is taking too long to respond. Please try again.'
+        // a write may have gone through before the connection gave up
+        : 'The server took too long to respond. Check whether your change was saved before trying again.')
+    }
     throw new ApiError('Cannot reach the server. Check your connection.')
   }
-  const text = await res.text()
-  const data = text ? JSON.parse(text) : null
+  // a proxy error page (HTML) is not JSON: treat it as "no details", never as a crash
+  const data = parseBody(await res.text()) as { detail?: unknown; error?: unknown } | null
   if (res.ok) return data as T
   if (res.status === 401 && token) onUnauthorized?.()
   // RFC 9457 problem document: `detail` is the user-facing message (`error` is kept for older servers)
