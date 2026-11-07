@@ -85,19 +85,19 @@ export function GroupScreen() {
 
       <Sheet open={menu} onClose={() => setMenu(false)}>
         <div className="space-y-3">
-          <button className="w-full rounded-full glass-btn py-3.5 font-semibold" onClick={() => { setMenu(false); setRenaming(true) }}>Rename group</button>
-          <button className="w-full rounded-full glass-btn py-3.5 font-semibold" onClick={async () => {
+          <button type="button" className="w-full rounded-full glass-btn py-3.5 font-semibold" onClick={() => { setMenu(false); setRenaming(true) }}>Rename group</button>
+          <button type="button" className="w-full rounded-full glass-btn py-3.5 font-semibold" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Reset invite link?\nThe current link will stop working.', 'Reset'))) return
             await attempt(async () => { await api.regenerateInvite(id); reload() })
           }}>Reset invite link</button>
-          <button className="w-full rounded-full glass-btn py-3.5 font-semibold text-neg" onClick={async () => {
+          <button type="button" className="w-full rounded-full glass-btn py-3.5 font-semibold text-neg" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Leave this group?', 'Leave'))) return
             await attempt(async () => { await api.leaveGroup(id); nav('/', { replace: true }) })
           }}>Leave group</button>
           {data.group.members.length === 1 && (
-            <button className="w-full rounded-full border border-neg/40 bg-neg/10 py-3.5 font-semibold text-neg" onClick={async () => {
+            <button type="button" className="w-full rounded-full border border-neg/40 bg-neg/10 py-3.5 font-semibold text-neg" onClick={async () => {
               setMenu(false)
               if (!(await confirm('Delete this group?\nAll its expenses and payments will be erased.', 'Delete'))) return
               await attempt(async () => { await api.deleteGroup(id); nav('/', { replace: true }) })
@@ -149,6 +149,7 @@ function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
   // First page comes with the group data; "Load more" appends older pages. A reload (after any change) starts over.
   const [older, setOlder] = useState<{ expenses: Expense[]; settlements: Settlement[]; eCursor: string | null; sCursor: string | null } | null>(null)
   const [loadingMore, setLoadingMore] = useState(false)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: start over from the first page whenever the group data is reloaded
   useEffect(() => setOlder(null), [data])
   const expenses = [...data.expenses, ...(older?.expenses ?? [])]
   const settlements = [...data.settlements, ...(older?.settlements ?? [])]
@@ -294,8 +295,8 @@ function BalancesTab({ data, me, onChanged }: { data: GroupData; me: User; onCha
       <section>
         <SectionTitle>Settle up</SectionTitle>
         <Dashed className="space-y-3 p-3">
-          {plan.length === 0 ? <p className="p-3.5 text-center text-muted">Everyone is settled up.</p> : plan.map((t, i) => (
-            <Tile key={i} leading={<AvatarStack users={[t.from, t.to]} size={34} max={2} />}
+          {plan.length === 0 ? <p className="p-3.5 text-center text-muted">Everyone is settled up.</p> : plan.map((t) => (
+            <Tile key={`${t.from.id}-${t.to.id}`} leading={<AvatarStack users={[t.from, t.to]} size={34} max={2} />}
               title={`${who(t.from, me)} ${t.from.id === me.id ? 'pay' : 'pays'} ${t.to.id === me.id ? 'you' : label(t.to)}`}
               subtitle={formatPaise(t.amountPaise)}
               trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPaying(t)}>{t.upiLink ? 'Pay' : 'Record'}</PillButton>} />

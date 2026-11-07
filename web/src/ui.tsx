@@ -240,7 +240,7 @@ export function Backdrop() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#17181b] via-[#101113] to-[#09090a]">
       <div className="absolute inset-x-0 top-0 h-[60%] bg-[radial-gradient(ellipse_90%_70%_at_30%_0%,rgb(255_255_255/0.05),transparent_70%)]" />
-      <svg className="absolute inset-0 size-full opacity-[0.06] mix-blend-overlay">
+      <svg aria-hidden="true" className="absolute inset-0 size-full opacity-[0.06] mix-blend-overlay">
         <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" /></filter>
         <rect width="100%" height="100%" filter="url(#grain)" />
       </svg>
@@ -265,6 +265,7 @@ function useScrollTabs(index: number, count: number) {
     if (sc) setEdges({ left: sc.scrollLeft > 2, right: sc.scrollLeft + sc.clientWidth < sc.scrollWidth - 2 })
   }, [index])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: measure again when the number of tabs changes
   useLayoutEffect(measure, [measure, count])
   useEffect(() => {
     items.current[index]?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
@@ -390,6 +391,7 @@ export const inputCls =
 
 export function Field({ label: text, children }: { label: string; children: ReactNode }) {
   return (
+    // biome-ignore lint/a11y/noLabelWithoutControl: the input is passed in as children, inside this label, which associates them
     <label className="block">
       <span className="mb-1.5 block px-1 text-[13px] text-muted">{text}</span>
       {children}
@@ -477,8 +479,10 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   if (!open && !present) return null
   const shown = last.current
   return createPortal(
-    <div className={`${open ? 'animate-fade' : 'animate-fade-out pointer-events-none'} fixed inset-0 z-50 flex items-end justify-center bg-black/45 backdrop-blur-[6px]`} onClick={onClose}>
-      <div role="dialog" aria-modal onClick={(e) => e.stopPropagation()}
+    // biome-ignore lint/a11y/noStaticElementInteractions: clicking the backdrop is a mouse convenience; Escape (handled above) is the keyboard way to close
+    <div className={`${open ? 'animate-fade' : 'animate-fade-out pointer-events-none'} fixed inset-0 z-50 flex items-end justify-center bg-black/45 backdrop-blur-[6px]`}
+      role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div role="dialog" aria-modal="true"
         onTouchStart={(e) => { from.current = e.touches[0].clientY }}
         onTouchMove={(e) => { if (from.current !== null) setDrag(Math.max(0, e.touches[0].clientY - from.current)) }}
         onTouchEnd={() => { const far = drag > 90; from.current = null; if (far) onClose(); else setDrag(0) }}
@@ -514,12 +518,12 @@ export function OfflineBanner() {
 export function useAsync<T>(load: () => Promise<T>, deps: unknown[]) {
   const [state, setState] = useState<{ data?: T; error?: unknown; loading: boolean }>({ loading: true })
   const [tick, setTick] = useState(0)
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the caller supplies the dependency list, and tick re-runs the load on reload()
   useEffect(() => {
     let live = true
     setState((s) => ({ ...s, error: undefined, loading: true }))
     load().then((data) => live && setState({ data, loading: false }), (error) => live && setState({ error, loading: false }))
     return () => { live = false }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...deps, tick])
   return { ...state, reload: () => setTick((t) => t + 1) }
 }

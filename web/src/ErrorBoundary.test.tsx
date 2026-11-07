@@ -29,6 +29,11 @@ function Flaky() {
   return <p>all good</p>
 }
 
+function Clicker() {
+  const [n, setN] = useState(0)
+  return <button type="button" onClick={() => setN(n + 1)}>clicks {n}</button>
+}
+
 describe('ErrorBoundary', () => {
   it('renders its children when nothing is wrong', () => {
     act(() => root.render(<ErrorBoundary><p>hello</p></ErrorBoundary>))
@@ -59,10 +64,6 @@ describe('ErrorBoundary', () => {
   })
 
   it('leaves normal interaction untouched', () => {
-    function Clicker() {
-      const [n, setN] = useState(0)
-      return <button onClick={() => { setN(n + 1) }}>clicks {n}</button>
-    }
     act(() => root.render(<ErrorBoundary><Clicker /></ErrorBoundary>))
     act(() => { (host.querySelector('button') as HTMLButtonElement).click() })
     expect(host.textContent).toBe('clicks 1')

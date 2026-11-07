@@ -27,7 +27,7 @@ export function GroupsScreen() {
             <div className="text-[13px] text-muted">Welcome back</div>
             <div className="truncate text-2xl font-extrabold">{label(me)}</div>
           </div>
-          <button aria-label="Profile" onClick={() => nav('/profile')}><Avatar user={me} size={46} /></button>
+          <button type="button" aria-label="Profile" onClick={() => nav('/profile')}><Avatar user={me} size={46} /></button>
         </div>
 
         <Overview groups={groups ?? []} />
