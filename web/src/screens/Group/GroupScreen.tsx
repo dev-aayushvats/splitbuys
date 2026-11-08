@@ -3,7 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { useAuth } from '../../lib/auth'
 import { formatPaise } from '../../lib/money'
-import { Dock, ErrorRetry, Field, Icon, InfoCard, RoundButton, Screen, Sheet, Skeleton, TopBar, tap, inputCls, useAsync, useFeedback } from '../../ui'
+import { useRefreshGroups, useRegenerateInvite, useRenameGroup } from '../../lib/mutations'
+import { useGroupData } from '../../lib/queries'
+import { Dock, ErrorRetry, Field, Icon, InfoCard, RoundButton, Screen, Sheet, Skeleton, TopBar, tap, inputCls, useFeedback } from '../../ui'
 import { ExpensesTab } from './ExpensesTab'
 import { BalancesTab } from './BalancesTab'
 import { MembersTab } from './MembersTab'
@@ -13,7 +15,11 @@ export function GroupScreen() {
   const nav = useNavigate()
   const { user } = useAuth()
   const { toast, confirm } = useFeedback()
-  const { data, error, loading, reload } = useAsync(() => api.groupData(id), [id], `group:${id}`)
+  const { data, error, isPending: loading, refetch } = useGroupData(id)
+  const reload = () => { void refetch() }
+  const rename = useRenameGroup(id)
+  const regenerate = useRegenerateInvite(id)
+  const refresh = useRefreshGroups()
   const [tab, setTab] = useState(0)
   const direction = useRef(1) // which way the page slides in: forward when the new tab is to the right
   const swipe = useRef<{ x: number; y: number } | null>(null)
@@ -63,9 +69,9 @@ export function GroupScreen() {
           // a deliberate sideways swipe moves between Expenses / Balances / Members
           if (Math.abs(dx) > 64 && Math.abs(dx) > Math.abs(dy) * 1.6) goTo(Math.min(2, Math.max(0, tab + (dx < 0 ? 1 : -1))))
         }}>
-        {tab === 0 && <ExpensesTab data={data} me={me} onChanged={reload} />}
-        {tab === 1 && <BalancesTab data={data} me={me} onChanged={reload} />}
-        {tab === 2 && <MembersTab data={data} me={me} onChanged={reload} />}
+        {tab === 0 && <ExpensesTab data={data} me={me} />}
+        {tab === 1 && <BalancesTab data={data} me={me} />}
+        {tab === 2 && <MembersTab data={data} me={me} />}
       </main>
 
       <Dock index={tab} onChange={goTo}
@@ -87,28 +93,24 @@ export function GroupScreen() {
           <button type="button" className="w-full rounded-full glass-btn py-3.5 font-semibold" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Reset invite link?\nThe current link will stop working.', 'Reset'))) return
-            await attempt(async () => { await api.regenerateInvite(id); reload() })
+            regenerate.mutate()
           }}>Reset invite link</button>
           <button type="button" className="w-full rounded-full glass-btn py-3.5 font-semibold text-neg" onClick={async () => {
             setMenu(false)
             if (!(await confirm('Leave this group?', 'Leave'))) return
-            await attempt(async () => { await api.leaveGroup(id); nav('/', { replace: true }) })
+            await attempt(async () => { await api.leaveGroup(id); nav('/', { replace: true }); void refresh(id, { forget: true }) })
           }}>Leave group</button>
           {data.group.members.length === 1 && (
             <button type="button" className="w-full rounded-full border border-neg/40 bg-neg/10 py-3.5 font-semibold text-neg" onClick={async () => {
               setMenu(false)
               if (!(await confirm('Delete this group?\nAll its expenses and payments will be erased.', 'Delete'))) return
-              await attempt(async () => { await api.deleteGroup(id); nav('/', { replace: true }) })
+              await attempt(async () => { await api.deleteGroup(id); nav('/', { replace: true }); void refresh(id, { forget: true }) })
             }}>Delete group</button>
           )}
         </div>
       </Sheet>
 
-      <RenameSheet open={renaming} current={data.group.name} onClose={() => setRenaming(false)} onSave={(name) => attempt(async () => {
-        await api.renameGroup(id, name)
-        setRenaming(false)
-        reload()
-      })} />
+      <RenameSheet open={renaming} current={data.group.name} onClose={() => setRenaming(false)} onSave={async (name) => { setRenaming(false); rename.mutate(name) }} />
     </Screen>
   )
 }

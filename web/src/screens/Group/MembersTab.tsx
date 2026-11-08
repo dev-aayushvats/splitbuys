@@ -1,10 +1,11 @@
-import { api } from '../../lib/api'
+import { useRemoveMember } from '../../lib/mutations'
 import { label, type GroupData, type User } from '../../lib/types'
 import { Avatar, AvatarStack, Dashed, Icon, PillButton, SectionTitle, Tile, useFeedback } from '../../ui'
 
-export function MembersTab({ data, me, onChanged }: { data: GroupData; me: User; onChanged: () => void }) {
+export function MembersTab({ data, me }: { data: GroupData; me: User }) {
   const { toast, confirm } = useFeedback()
   const { group } = data
+  const removeMember = useRemoveMember(group.id)
   const link = `${window.location.origin}/join/${group.inviteToken}`
 
   async function share() {
@@ -37,7 +38,7 @@ export function MembersTab({ data, me, onChanged }: { data: GroupData; me: User;
               subtitle={m.name ? m.email : undefined}
               onClick={m.id === me.id ? undefined : async () => {
                 if (!(await confirm(`Remove ${label(m)} from this group?\nThey must be settled up first.`, 'Remove'))) return
-                try { await api.removeMember(group.id, m.id); toast(`${label(m)} removed`); onChanged() } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
+                removeMember.mutate(m.id, { onSuccess: () => toast(`${label(m)} removed`) })
               }} />
           ))}
         </div>

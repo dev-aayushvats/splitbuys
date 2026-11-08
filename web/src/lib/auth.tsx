@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { api, ApiError, getSavedToken, setToken, setUnauthorizedHandler } from './api'
+import { queryClient, wipeLocalData } from './queryClient'
 import type { Profile } from './types'
 
 interface AuthValue {
@@ -20,7 +21,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Profile | null>(null)
   const [ready, setReady] = useState(false)
 
-  const signOut = useCallback(() => { setToken(null); setUser(null) }, [])
+  // sign-out leaves nothing behind on this device: token, cached data and the persisted cache all go
+  const signOut = useCallback(() => { setToken(null); wipeLocalData(); setUser(null) }, [])
 
   useEffect(() => {
     setUnauthorizedHandler(signOut)
@@ -42,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signOut,
     async verify(email, code) {
       const r = await api.verifyOtp(email, code)
+      queryClient.clear() // nothing from a previous session may be shown to the person who just signed in
       setToken(r.token)
       setUser(r.user)
     },
