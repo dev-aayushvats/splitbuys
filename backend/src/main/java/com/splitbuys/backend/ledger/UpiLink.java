@@ -20,6 +20,8 @@ final class UpiLink {
     private UpiLink() {
     }
 
+    /** UPI apps refuse a single payment above this (Rs 1,00,000); a link for more would only end in a failed payment. */
+    static final long MAX_PAISE = 1_00_000_00L;
     private static final int MAX_NAME = 40;
     private static final int MAX_NOTE = 50; // UPI apps truncate or reject long notes
     private static final Pattern SAFE_ID = Pattern.compile("^[a-z0-9][a-z0-9._-]{1,63}@[a-z][a-z0-9]{1,31}$"); // same rule as UpiId
@@ -28,11 +30,11 @@ final class UpiLink {
     private static final Pattern SPACES = Pattern.compile(" {2,}");
 
     /**
-     * @return the link, or null when it cannot be made safely: an unusable UPI ID or a non-positive amount.
+     * @return the link, or null when it cannot be made safely: an unusable UPI ID, or an amount that is not positive or is above the UPI limit.
      *         The caller then shows the UPI ID without a Pay button.
      */
     static String build(String upiId, String payeeName, long amountPaise, String note) {
-        if (upiId == null || !SAFE_ID.matcher(upiId).matches() || amountPaise <= 0) return null;
+        if (upiId == null || !SAFE_ID.matcher(upiId).matches() || amountPaise <= 0 || amountPaise > MAX_PAISE) return null;
         String amount = BigDecimal.valueOf(amountPaise, 2).toPlainString(); // paise -> "123.45", never exponent notation
         String name = plain(payeeName, MAX_NAME, upiId); // an unnameable payee is shown by UPI ID, never left blank
         String text = plain(note, MAX_NOTE, "SplitBuys");

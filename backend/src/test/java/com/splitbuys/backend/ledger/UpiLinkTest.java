@@ -25,7 +25,7 @@ class UpiLinkTest {
         assertTrue(UpiLink.build(ID, "A", 5, "n").contains("&am=0.05&"));
         assertTrue(UpiLink.build(ID, "A", 1000, "n").contains("&am=10.00&"));
         assertTrue(UpiLink.build(ID, "A", 123456, "n").contains("&am=1234.56&"));
-        assertTrue(UpiLink.build(ID, "A", 100_000_000_00L, "n").contains("&am=100000000.00&"));
+        assertTrue(UpiLink.build(ID, "A", UpiLink.MAX_PAISE, "n").contains("&am=100000.00&"));
     }
 
     @Test
@@ -44,6 +44,13 @@ class UpiLinkTest {
         assertNull(UpiLink.build("evil@bank\n", "A", 100, "n"));
         assertNull(UpiLink.build(ID, "A", 0, "n"));
         assertNull(UpiLink.build(ID, "A", -50, "n"));
+    }
+
+    @Test
+    void noLinkAboveTheOneLakhUpiLimitButExactlyOneLakhIsFine() {
+        assertTrue(UpiLink.build(ID, "A", 10_000_000, "n").contains("&am=100000.00&"));
+        assertNull(UpiLink.build(ID, "A", 10_000_001, "n"));
+        assertNull(UpiLink.build(ID, "A", 50_000_000, "n"));
     }
 
     @Test
