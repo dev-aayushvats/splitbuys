@@ -1,7 +1,7 @@
 import type {
   Balances, Expense, ExpenseBody, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Profile, Settlement,
 } from './types'
-import { fetchWithRetry, parseBody, RequestTimeoutError } from './http'
+import { fetchWithRetry, IDEMPOTENCY_HEADER, parseBody, RequestTimeoutError } from './http'
 
 // Unset (dev): the local backend. Set to an empty string (the Docker image does this): same origin, i.e. calls go to /api on
 // whichever host served the app, where a reverse proxy forwards them to the backend.
@@ -28,19 +28,23 @@ export function setToken(t: string | null) {
   try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY) } catch { /* private mode */ }
 }
 
-async function send<T = unknown>(method: string, path: string, body?: unknown): Promise<T> {
+async function send<T = unknown>(method: string, path: string, body?: unknown, idempotencyKey?: string): Promise<T> {
   let res: Response
   try {
     res = await fetchWithRetry(fetch, `${API_URL}/api/v1${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(idempotencyKey ? { [IDEMPOTENCY_HEADER]: idempotencyKey } : {}),
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch (e) {
     if (e instanceof RequestTimeoutError) {
-      throw new ApiError(method === 'GET'
+      throw new ApiError(method === 'GET' || idempotencyKey
         ? 'The server is taking too long to respond. Please try again.'
-        // a write may have gone through before the connection gave up
+        // a write without a key may have gone through before the connection gave up
         : 'The server took too long to respond. Check whether your change was saved before trying again.')
     }
     throw new ApiError('Cannot reach the server. Check your connection.')
@@ -64,7 +68,7 @@ export const api = {
   clearUpi: () => send<Profile>('DELETE', '/me/upi'),
 
   groups: () => send<GroupSummary[]>('GET', '/groups'),
-  createGroup: (name: string) => send<GroupDetail>('POST', '/groups', { name }),
+  createGroup: (name: string, key: string) => send<GroupDetail>('POST', '/groups', { name }, key),
   group: (id: number) => send<GroupDetail>('GET', `/groups/${id}`),
   regenerateInvite: (id: number) => send<GroupDetail>('POST', `/groups/${id}/invite/regenerate`),
   renameGroup: (id: number, name: string) => send<GroupDetail>('PUT', `/groups/${id}`, { name }),
@@ -78,13 +82,13 @@ export const api = {
   expenses: (g: number, cursor?: string | null) =>
     send<Page<Expense>>('GET', `/groups/${g}/expenses?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
   expense: (g: number, e: number) => send<Expense>('GET', `/groups/${g}/expenses/${e}`),
-  addExpense: (g: number, b: ExpenseBody) => send<void>('POST', `/groups/${g}/expenses`, b),
+  addExpense: (g: number, b: ExpenseBody, key: string) => send<void>('POST', `/groups/${g}/expenses`, b, key),
   updateExpense: (g: number, e: number, b: ExpenseBody) => send<void>('PUT', `/groups/${g}/expenses/${e}`, b),
   deleteExpense: (g: number, e: number) => send<void>('DELETE', `/groups/${g}/expenses/${e}`),
   settlements: (g: number, cursor?: string | null) =>
     send<Page<Settlement>>('GET', `/groups/${g}/settlements?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
-  addSettlement: (g: number, fromUserId: number, toUserId: number, amountPaise: number) =>
-    send<void>('POST', `/groups/${g}/settlements`, { fromUserId, toUserId, amountPaise }),
+  addSettlement: (g: number, fromUserId: number, toUserId: number, amountPaise: number, key: string) =>
+    send<void>('POST', `/groups/${g}/settlements`, { fromUserId, toUserId, amountPaise }, key),
   deleteSettlement: (g: number, s: number) => send<void>('DELETE', `/groups/${g}/settlements/${s}`),
   balances: (g: number) => send<Balances>('GET', `/groups/${g}/balances`),
 

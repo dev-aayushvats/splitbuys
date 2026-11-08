@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,8 +26,10 @@ class GroupController {
 
     @PostMapping("/groups")
     @ResponseStatus(HttpStatus.CREATED)
-    GroupDetail create(@CurrentUser long userId, @Valid @RequestBody GroupRequest req) {
-        return groups.create(userId, req.name());
+    GroupDetail create(@CurrentUser long userId,
+                       @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+                       @Valid @RequestBody GroupRequest req) {
+        return groups.create(userId, idempotencyKey, req.name());
     }
 
     @GetMapping("/groups")

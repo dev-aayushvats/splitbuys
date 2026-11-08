@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -19,6 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/groups/{groupId}")
 class LedgerController {
+    private static final String IDEMPOTENCY_KEY = "Idempotency-Key";
+
     private final LedgerService ledger;
     private final BalanceService balances;
 
@@ -41,8 +44,10 @@ class LedgerController {
 
     @PostMapping("/expenses")
     @ResponseStatus(HttpStatus.CREATED)
-    ExpenseDto addExpense(@CurrentUser long userId, @PathVariable long groupId, @Valid @RequestBody ExpenseRequest req) {
-        return ledger.addExpense(groupId, userId, req);
+    ExpenseDto addExpense(@CurrentUser long userId, @PathVariable long groupId,
+                          @RequestHeader(value = IDEMPOTENCY_KEY, required = false) String idempotencyKey,
+                          @Valid @RequestBody ExpenseRequest req) {
+        return ledger.addExpense(groupId, userId, idempotencyKey, req);
     }
 
     @PutMapping("/expenses/{expenseId}")
@@ -67,8 +72,9 @@ class LedgerController {
     @PostMapping("/settlements")
     @ResponseStatus(HttpStatus.CREATED)
     SettlementDto addSettlement(@CurrentUser long userId, @PathVariable long groupId,
+                                @RequestHeader(value = IDEMPOTENCY_KEY, required = false) String idempotencyKey,
                                 @Valid @RequestBody SettlementRequest req) {
-        return ledger.addSettlement(groupId, userId, req);
+        return ledger.addSettlement(groupId, userId, idempotencyKey, req);
     }
 
     @DeleteMapping("/settlements/{settlementId}")

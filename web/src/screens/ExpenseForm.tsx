@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useIdempotencyKey } from '../lib/idempotency'
 import { hundredthsToInput, parseHundredths } from '../lib/money'
 import { evaluateSplit } from '../lib/splits'
 import { label, type Expense, type GroupDetail, type SplitType, type User } from '../lib/types'
@@ -66,6 +67,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
       ? `This was split by ${expense.splitType === 'PERCENT' ? 'percentage' : 'shares'}; shown here as exact amounts.` : null,
   )
   const [busy, setBusy] = useState(false)
+  const createKey = useIdempotencyKey()
 
   const nameOf = useCallback((id: number) => label(members.find((m) => m.id === id)!), [members])
 
@@ -88,7 +90,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
     const body = { description: description.trim(), amountPaise: parseHundredths(amount)!, payerId, splitType: kind, splits: result.splits }
     try {
       if (expense) await api.updateExpense(group.id, expense.id, body)
-      else await api.addExpense(group.id, body)
+      else await api.addExpense(group.id, body, createKey.keyFor(body))
       nav(-1)
     } catch (e) {
       setBusy(false)

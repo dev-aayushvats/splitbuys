@@ -9,6 +9,7 @@ com.splitbuys.backend
 ├── common/          cross-cutting, depends on no feature
 │   ├── error/         DomainException + NotFound / InvalidRequest / Conflict / Unauthorized / RateLimited / DependencyFailure
 │   ├── web/           GlobalExceptionHandler (RFC 9457 problems), RequestIdFilter, ProblemJson
+│   ├── idempotency/   Idempotency-Key replay for create requests (same transaction as the work), 24 h purge
 │   └── security/      SecurityConfig, rate limiting, @CurrentUser, prod safety check
 ├── user/            accounts           UserService is the only door in
 ├── auth/            email OTP + access tokens
@@ -52,7 +53,7 @@ With `SPRING_PROFILES_ACTIVE=prod` the app refuses to start unless real email is
 ## Data
 
 Flyway owns the schema, with one migration folder per database (`db/migration/sqlite`, `db/migration/postgresql`); Hibernate never alters it. `V1` baselines the original
-schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns. Later migrations add columns (`upi_id`: SQLite `V3`, PostgreSQL `V2`).
+schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns. Later migrations add columns (`upi_id`: SQLite `V3`, PostgreSQL `V2`). `idempotency_key` (SQLite `V4`, PostgreSQL `V3`) holds replayable responses for 24 hours.
 Concurrent edits to a group or expense are rejected with 409 instead of silently overwriting. Balances are computed
 with four aggregate queries however many groups are listed. SQLite is the local default. PostgreSQL (Neon) is selected with
 `SPRING_PROFILES_ACTIVE=postgres` (see `.env.example`); that profile turns on Hibernate schema validation (SQLite's

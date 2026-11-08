@@ -2,6 +2,7 @@ package com.splitbuys.backend.ledger;
 
 import com.splitbuys.backend.common.error.InvalidRequestException;
 import com.splitbuys.backend.common.error.NotFoundException;
+import com.splitbuys.backend.common.idempotency.IdempotencyService;
 import com.splitbuys.backend.group.ExpenseGroup;
 import com.splitbuys.backend.group.GroupService;
 import com.splitbuys.backend.split.SplitCalculator;
@@ -32,8 +33,11 @@ public class LedgerService {
     private final UserService users;
     private final ExpenseRepository expenses;
     private final SettlementRepository settlements;
+    private final IdempotencyService idempotency;
 
-    LedgerService(GroupService groups, UserService users, ExpenseRepository expenses, SettlementRepository settlements) {
+    LedgerService(GroupService groups, UserService users, ExpenseRepository expenses, SettlementRepository settlements,
+                  IdempotencyService idempotency) {
+        this.idempotency = idempotency;
         this.groups = groups;
         this.users = users;
         this.expenses = expenses;
@@ -55,7 +59,12 @@ public class LedgerService {
         return ExpenseDto.from(expense(groupId, expenseId));
     }
 
-    public ExpenseDto addExpense(long groupId, long userId, ExpenseRequest req) {
+    public ExpenseDto addExpense(long groupId, long userId, String idempotencyKey, ExpenseRequest req) {
+        return idempotency.once(userId, idempotencyKey, "expense:" + groupId, req, ExpenseDto.class,
+                () -> addExpense(groupId, userId, req));
+    }
+
+    private ExpenseDto addExpense(long groupId, long userId, ExpenseRequest req) {
         ExpenseGroup group = groups.requireMember(groupId, userId);
         Expense expense = new Expense(group, users.require(userId));
         revise(expense, group, req);
@@ -105,7 +114,12 @@ public class LedgerService {
         return new PageResponse<>(rows.stream().map(dto).toList(), next);
     }
 
-    public SettlementDto addSettlement(long groupId, long userId, SettlementRequest req) {
+    public SettlementDto addSettlement(long groupId, long userId, String idempotencyKey, SettlementRequest req) {
+        return idempotency.once(userId, idempotencyKey, "settlement:" + groupId, req, SettlementDto.class,
+                () -> addSettlement(groupId, userId, req));
+    }
+
+    private SettlementDto addSettlement(long groupId, long userId, SettlementRequest req) {
         ExpenseGroup group = groups.requireMember(groupId, userId);
         if (req.fromUserId().equals(req.toUserId())) {
             throw new InvalidRequestException("Payer and receiver must be different people");

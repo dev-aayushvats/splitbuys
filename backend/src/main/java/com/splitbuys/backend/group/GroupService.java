@@ -1,5 +1,6 @@
 package com.splitbuys.backend.group;
 
+import com.splitbuys.backend.common.idempotency.IdempotencyService;
 import com.splitbuys.backend.common.error.ConflictException;
 import com.splitbuys.backend.common.error.NotFoundException;
 import com.splitbuys.backend.user.AppUser;
@@ -21,9 +22,11 @@ public class GroupService {
     private final GroupRepository groups;
     private final UserService users;
     private final LedgerPort ledger;
+    private final IdempotencyService idempotency;
     private final SecureRandom random = new SecureRandom();
 
-    GroupService(GroupRepository groups, UserService users, LedgerPort ledger) {
+    GroupService(GroupRepository groups, UserService users, LedgerPort ledger, IdempotencyService idempotency) {
+        this.idempotency = idempotency;
         this.groups = groups;
         this.users = users;
         this.ledger = ledger;
@@ -42,7 +45,11 @@ public class GroupService {
         return g;
     }
 
-    public GroupDetail create(long userId, String name) {
+    public GroupDetail create(long userId, String idempotencyKey, String name) {
+        return idempotency.once(userId, idempotencyKey, "group", name, GroupDetail.class, () -> create(userId, name));
+    }
+
+    private GroupDetail create(long userId, String name) {
         AppUser creator = users.require(userId);
         return GroupDetail.from(groups.save(new ExpenseGroup(name, newToken(), creator)));
     }
