@@ -2,7 +2,7 @@ import { label, type User } from '../lib/types'
 
 const PALETTES = [
   ['#B26BFF', '#FF7EB6'], ['#4FACFE', '#00D4E6'], ['#FF9A44', '#FC6076'],
-  ['#43E97B', '#2BD9C0'], ['#FFD84D', '#FF9F43'], ['#7F7FD5', '#86A8E7'],
+  ['#43E97B', '#2BD9C0'], ['#FFBD14', '#FB7803'], ['#7F7FD5', '#86A8E7'],
 ]
 
 export function Avatar({ user, size = 44 }: { user: User; size?: number }) {

@@ -8,9 +8,9 @@
   --color-high: rgb(255 255 255 / 0.12);
   --color-line: rgb(255 255 255 / 0.14);
   --color-dash: rgb(255 255 255 / 0.22);
-  --color-accent: #ffd84d;
-  --color-accent-deep: #f2b92a;
-  --color-on-accent: #17140a;
+  --color-accent: #ffa31f;
+  --color-accent-deep: #fb7803;
+  --color-on-accent: #1d0f02;
   --color-ink: #f4f5fa;
   --color-muted: #a1a1a8;
   --color-pos: #62e09a;
@@ -75,11 +75,11 @@
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
     mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 }
-/* primary action: a glowing amber glass pill */
+/* primary action: a glowing orange-to-amber glass pill */
 @utility btn-accent {
-  background: linear-gradient(180deg, #ffe574, #fad14a 75%, #f2c53a);
+  background: linear-gradient(135deg, #ffbd14, #ff9a0f 60%, #fb7803);
   color: var(--color-on-accent);
-  box-shadow: 0 8px 20px -8px rgb(250 210 70 / 0.4), inset 0 1px 0 rgb(255 255 255 / 0.5);
+  box-shadow: 0 8px 20px -8px rgb(255 140 15 / 0.45), inset 0 1px 0 rgb(255 255 255 / 0.5);
 }
 
 /* secondary action: a frosted pill that presses in like the rest of the glass */
