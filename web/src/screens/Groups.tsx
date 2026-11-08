@@ -14,7 +14,7 @@ export function GroupsScreen() {
   const { user } = useAuth()
   const nav = useNavigate()
   const { toast } = useFeedback()
-  const { data: groups, error, loading, reload } = useAsync(() => api.groups(), [])
+  const { data: groups, error, loading, reload } = useAsync(() => api.groups(), [], 'groups')
   const [creating, setCreating] = useState(false)
   const createKey = useIdempotencyKey()
   const [menu, setMenu] = useState(false)

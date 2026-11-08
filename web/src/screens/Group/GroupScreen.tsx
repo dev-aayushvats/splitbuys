@@ -13,7 +13,7 @@ export function GroupScreen() {
   const nav = useNavigate()
   const { user } = useAuth()
   const { toast, confirm } = useFeedback()
-  const { data, error, loading, reload } = useAsync(() => api.groupData(id), [id])
+  const { data, error, loading, reload } = useAsync(() => api.groupData(id), [id], `group:${id}`)
   const [tab, setTab] = useState(0)
   const direction = useRef(1) // which way the page slides in: forward when the new tab is to the right
   const swipe = useRef<{ x: number; y: number } | null>(null)
