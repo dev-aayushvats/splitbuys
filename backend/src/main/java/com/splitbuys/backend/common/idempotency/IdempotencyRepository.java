@@ -10,6 +10,10 @@ interface IdempotencyRepository extends JpaRepository<IdempotencyRecord, Long> {
     Optional<IdempotencyRecord> findByUserIdAndKeyValue(long userId, String keyValue);
 
     @Modifying
+    @Query("delete from IdempotencyRecord r where r.userId = :userId")
+    void deleteByUserId(long userId);
+
+    @Modifying
     @Query("delete from IdempotencyRecord r where r.createdAt < :cutoff")
     int deleteOlderThan(Instant cutoff);
 }

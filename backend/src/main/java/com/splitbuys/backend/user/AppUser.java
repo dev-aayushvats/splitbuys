@@ -6,6 +6,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import java.time.Instant;
 
 @Entity
 @Table(name = "app_user")
@@ -21,6 +22,9 @@ public class AppUser {
 
     /** Where this person wants to be paid (a UPI ID such as asha@okbank). Private: see ProfileDto vs UserDto. */
     private String upiId;
+
+    /** Set when the person deleted their account. The row stays (shared history points at it) but holds nothing personal. */
+    private Instant deletedAt;
 
     protected AppUser() {
     }
@@ -48,6 +52,22 @@ public class AppUser {
     /** Pass an already-normalised ID (see UpiId), or null to remove it. */
     public void setUpiId(String upiId) {
         this.upiId = upiId;
+    }
+
+    /**
+     * Erases what identifies this person. The email is replaced by a unique placeholder (the column is unique, and it frees
+     * the real address so the person can sign up again later as a brand-new user); the row itself stays because expenses
+     * and payments in other people's groups still refer to it and must keep adding up.
+     */
+    public void closeAccount(Instant now) {
+        this.email = "deleted-" + id + "@deleted.invalid";
+        this.name = "Deleted user";
+        this.upiId = null;
+        this.deletedAt = now;
+    }
+
+    public boolean isDeleted() {
+        return deletedAt != null;
     }
 
     public void rename(String name) {

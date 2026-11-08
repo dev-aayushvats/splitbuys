@@ -66,6 +66,7 @@ export const api = {
   setName: (name: string) => send<Profile>('PUT', '/me', { name }),
   setUpi: (upiId: string) => send<Profile>('PUT', '/me/upi', { upiId }),
   clearUpi: () => send<Profile>('DELETE', '/me/upi'),
+  deleteAccount: (email: string) => send<void>('DELETE', '/me', { email }),
 
   groups: () => send<GroupSummary[]>('GET', '/groups'),
   createGroup: (name: string, key: string) => send<GroupDetail>('POST', '/groups', { name }, key),

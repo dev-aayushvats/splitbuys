@@ -107,7 +107,7 @@ class BackupApiTest extends ApiTest {
         assertEquals("rw-------", PosixFilePermissions.toString(Files.getPosixFilePermissions(path)));
         List<String> lines = lines(path);
         assertEquals("-- splitbuys data backup", lines.get(0));
-        assertTrue(lines.stream().anyMatch(l -> l.startsWith("COPY app_user (id, email, name, upi_id) FROM stdin;")));
+        assertTrue(lines.stream().anyMatch(l -> l.startsWith("COPY app_user (id, email, name, upi_id, deleted_at) FROM stdin;")));
         assertTrue(lines.contains("\\."), "each COPY block is terminated like pg_dump's");
         assertTrue(lines.stream().anyMatch(l -> l.startsWith("SELECT setval(pg_get_serial_sequence('expense'")));
         assertTrue(lines.get(lines.size() - 1).startsWith("-- end of dump"));

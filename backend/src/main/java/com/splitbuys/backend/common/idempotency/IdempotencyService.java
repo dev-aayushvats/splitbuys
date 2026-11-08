@@ -73,6 +73,12 @@ public class IdempotencyService {
         return result;
     }
 
+    /** Drops everything remembered for a user (used when their account is deleted). */
+    @Transactional
+    public void forgetUser(long userId) {
+        records.deleteByUserId(userId);
+    }
+
     @Transactional
     public int purgeOld() {
         return records.deleteOlderThan(Instant.now().minus(RETAIN));

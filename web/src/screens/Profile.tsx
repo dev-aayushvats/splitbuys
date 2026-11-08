@@ -2,12 +2,14 @@ import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { label } from '../lib/types'
 import { isValidUpi, normalizeUpi } from '../lib/upi'
+import { DeleteAccountSheet } from './DeleteAccount'
 import { Avatar, Field, Icon, Screen, TopBar, inputCls, useFeedback } from '../ui'
 
 export function ProfileScreen() {
   const { user, setName, setUpi, clearUpi, signOut } = useAuth()
   const { toast, confirm } = useFeedback()
   const me = user!
+  const [deleting, setDeleting] = useState(false)
   const [name, setNameText] = useState(me.name ?? '')
   const [busy, setBusy] = useState(false)
   const changed = name.trim() !== (me.name ?? '') && name.trim() !== ''
@@ -82,7 +84,11 @@ export function ProfileScreen() {
           className="glass-lite flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-semibold text-neg">
           <Icon name="logout" size={18} /> Sign out
         </button>
+        <button type="button" onClick={() => setDeleting(true)} className="mt-3 w-full py-2.5 text-[13.5px] font-semibold text-muted underline-offset-2 hover:underline">
+          Delete account
+        </button>
       </div>
+      <DeleteAccountSheet open={deleting} onClose={() => setDeleting(false)} email={me.email} />
     </Screen>
   )
 }

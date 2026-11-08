@@ -118,6 +118,12 @@ public class OtpService {
         return new Verified(resolved.user(), resolved.created());
     }
 
+    /** Drops any pending sign-in code for this address (used when its account is deleted). */
+    @Transactional
+    public void forget(String rawEmail) {
+        otps.deleteByEmail(normalize(rawEmail));
+    }
+
     /** Housekeeping: spent and expired codes would otherwise accumulate forever. */
     @Transactional
     public int purgeExpired() {
