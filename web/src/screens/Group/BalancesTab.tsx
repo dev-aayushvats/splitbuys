@@ -74,32 +74,44 @@ function PaymentSheet({ transfer, me, fresh, onClose, onSubmit }: {
   )
 }
 
-/** Opens the user's UPI app with the receiver and amount filled in. It cannot tell whether the payment happened. */
+/**
+ * Copy-first: banks and UPI apps (Kotak, Samsung Money, GPay) commonly refuse a payment started from a link to a personal
+ * UPI ID, so the dependable path is to copy the ID and the amount into the app. The link is kept as a best-effort extra.
+ * No UPI app can tell us whether the payment happened.
+ */
 function UpiPay({ transfer, fresh }: { transfer: Transfer; fresh: boolean }) {
   const { toast } = useFeedback()
-  async function copy() {
-    try { await navigator.clipboard.writeText(transfer.upiId!); toast('UPI ID copied') } catch { toast('Could not copy') }
+  async function copy(text: string, done: string) {
+    try { await navigator.clipboard.writeText(text); toast(done) } catch { toast('Could not copy') }
   }
+  const row = 'flex items-center gap-2 rounded-[20px] bg-black/25 py-1.5 pl-3.5 pr-1.5 ring-1 ring-white/10'
   return (
     <div className="space-y-3">
-      {fresh ? (
-        <a href={transfer.upiLink!} onClick={tap}
-          className="btn-accent flex h-13 w-full items-center justify-center gap-2 rounded-full py-3.5 font-bold">
-          <Icon name="payments" size={20} /> Pay {formatPaise(transfer.amountPaise)} via UPI
-        </a>
-      ) : (
-        // the amount may have changed since this was last loaded: wait for the server before offering to pay it
-        <button type="button" disabled aria-busy className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-white/10 py-3.5 font-bold text-muted">
-          <Spinner /> Waiting for the latest amount…
-        </button>
-      )}
-      <div className="flex items-center gap-2 rounded-[20px] bg-black/25 py-1.5 pl-3.5 pr-1.5 ring-1 ring-white/10">
+      <div className={row}>
         <span className="min-w-0 flex-1 select-all truncate text-[13px] text-muted">{label(transfer.to)} · {transfer.upiId}</span>
-        <PillButton onClick={copy} className="h-9 px-3.5 text-[13px]"><Icon name="copy" size={15} />Copy</PillButton>
+        <PillButton onClick={() => copy(transfer.upiId!, 'UPI ID copied')} className="h-9 px-3.5 text-[13px]"><Icon name="copy" size={15} />Copy ID</PillButton>
+      </div>
+      <div className={row}>
+        <span className="min-w-0 flex-1 truncate text-[15px] font-bold">{formatPaise(transfer.amountPaise)}</span>
+        {/* the amount may have changed since this was last loaded: wait for the server before offering to copy it */}
+        <PillButton onClick={() => copy(hundredthsToInput(transfer.amountPaise), 'Amount copied')} disabled={!fresh} className="h-9 px-3.5 text-[13px]">
+          {fresh ? <Icon name="copy" size={15} /> : <Spinner className="size-4" />}Copy amount
+        </PillButton>
       </div>
       <p className="px-1 text-[12.5px] text-muted">
-        UPI apps can't tell us whether you paid. After paying, record it below so everyone's balance updates.
+        Pay this UPI ID in your UPI app, then record it below so everyone's balance updates. We can't tell whether you paid.
       </p>
+      {fresh ? (
+        <a href={transfer.upiLink!} onClick={tap}
+          className="glass-btn flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold">
+          <Icon name="payments" size={18} /> Try opening your UPI app
+        </a>
+      ) : (
+        <button type="button" disabled aria-busy className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-muted">
+          <Spinner className="size-4" /> Waiting for the latest amount…
+        </button>
+      )}
+      <p className="px-1 text-[12px] text-muted/80">Some banks and apps block payments started from a link. If yours says the payment is not allowed, use the copied ID and amount instead.</p>
     </div>
   )
 }
