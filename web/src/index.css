@@ -15,6 +15,8 @@
   --color-muted: #a1a1a8;
   --color-pos: #62e09a;
   --color-neg: #ff7b7b;
+  --animate-splash: splash-out 0.3s ease-out both;
+  --animate-splash-logo: splash-logo 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   --animate-fade: fade 0.2s ease-out both;
   --animate-rise: rise 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-sheet: sheet 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
@@ -24,6 +26,8 @@
   --animate-slide-back: slide-back 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-sheet-out: sheet-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
   --animate-fade-out: fade-out 0.22s ease-in both;
+  @keyframes splash-out { 0%, 55% { opacity: 1 } 100% { opacity: 0 } }
+  @keyframes splash-logo { from { opacity: 0; transform: scale(0.6) } 55% { opacity: 1; transform: scale(1) } to { opacity: 1; transform: scale(1.06) } }
   @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
   @keyframes rise { from { opacity: 0; transform: translateY(10px) } to { opacity: 1; transform: none } }
   @keyframes sheet { from { opacity: 0; transform: translateY(40px) scale(0.97) } to { opacity: 1; transform: none } }
