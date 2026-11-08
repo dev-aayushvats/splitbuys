@@ -6,6 +6,7 @@ import { useIdempotencyKey } from '../lib/idempotency'
 import { useRefreshGroups } from '../lib/mutations'
 import { useGroups } from '../lib/queries'
 import { formatPaise } from '../lib/money'
+import { headline, owedShare, summarize } from '../lib/overview'
 import { label, type GroupSummary } from '../lib/types'
 import {
   Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, RoundButton, Screen, SectionTitle,
@@ -36,7 +37,7 @@ export function GroupsScreen() {
           <button type="button" aria-label="Profile" onClick={() => nav('/profile')}><Avatar user={me} size={46} /></button>
         </div>
 
-        <Overview groups={groups ?? []} />
+        <Overview groups={groups} />
 
         <section>
           <SectionTitle trailing={
@@ -108,27 +109,48 @@ export function GroupsScreen() {
   )
 }
 
-function Overview({ groups }: { groups: GroupSummary[] }) {
-  const owed = groups.filter((g) => g.myBalancePaise > 0).reduce((s, g) => s + g.myBalancePaise, 0)
-  const owe = groups.filter((g) => g.myBalancePaise < 0).reduce((s, g) => s - g.myBalancePaise, 0)
-  const net = owed - owe
+/**
+ * One headline figure (what you are owed or owe overall), a bar that shows how it splits, and the two sides with the
+ * number of groups behind each. The net is the only number shown twice-removed: the sides are its parts, not copies.
+ */
+export function Overview({ groups }: { groups: GroupSummary[] | undefined }) {
+  if (!groups) return <Skeleton className="h-[184px] rounded-[32px]" />
+  const o = summarize(groups)
+  const tone = o.net > 0 ? 'text-pos' : o.net < 0 ? 'text-neg' : 'text-ink'
+  const share = owedShare(o)
+  const plural = (n: number) => `${n} group${n === 1 ? '' : 's'}`
   return (
-    <div className="glass relative overflow-hidden rounded-[32px] p-5">
-      <div className="flex items-stretch gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="text-lg font-bold">Overview</div>
-          <dl className="mt-3 space-y-1.5 text-[13px]">
-            <div className="flex gap-2"><dt className="text-muted">You are owed</dt><dd className="truncate font-bold text-pos">{formatPaise(owed)}</dd></div>
-            <div className="flex gap-2"><dt className="text-muted">You owe</dt><dd className="truncate font-bold text-neg">{formatPaise(owe)}</dd></div>
-          </dl>
-        </div>
-        <Dashed className="relative flex w-[124px] shrink-0 flex-col items-center justify-center rounded-[24px] px-2.5 py-4 text-center">
-          <div className="text-xs text-muted">Net balance</div>
-          <div className="mt-1.5 max-w-full truncate text-xl font-extrabold">{formatPaise(Math.abs(net))}</div>
-          <div className="mt-2.5 grid size-9 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/25"><Icon name="wallet" size={19} /></div>
-          <div className="mt-2 text-[11.5px] text-muted">{net === 0 ? 'all settled' : net > 0 ? 'you are owed' : 'you owe'}</div>
-        </Dashed>
+    <div className="glass overflow-hidden rounded-[32px] p-5">
+      <div className="flex items-center gap-2 text-[13px] font-semibold text-muted">
+        <span className="grid size-7 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/25"><Icon name="wallet" size={15} /></span>
+        Overall balance
       </div>
+      <div className={`mt-3 truncate text-[34px] font-extrabold leading-none ${tone}`}>{formatPaise(Math.abs(o.net))}</div>
+      <div className="mt-1.5 text-[13px] text-muted">{headline(o, groups.length)}</div>
+
+      {o.owed + o.owe > 0 && (
+        <>
+          <div role="img" aria-label={`${share.toFixed(0)}% owed to you, ${(100 - share).toFixed(0)}% you owe`}
+            className="mt-4 flex h-2 gap-0.5 overflow-hidden rounded-full bg-white/10">
+            <div className="rounded-full bg-pos" style={{ width: `${share}%` }} />
+            <div className="rounded-full bg-neg" style={{ width: `${100 - share}%` }} />
+          </div>
+          <dl className="mt-3.5 grid grid-cols-2 gap-3">
+            <Side label="You're owed" tone="bg-pos" value={o.owed} groups={o.owedGroups > 0 ? `in ${plural(o.owedGroups)}` : 'nothing pending'} />
+            <Side label="You owe" tone="bg-neg" value={o.owe} groups={o.oweGroups > 0 ? `in ${plural(o.oweGroups)}` : 'nothing pending'} />
+          </dl>
+        </>
+      )}
+    </div>
+  )
+}
+
+function Side({ label, tone, value, groups }: { label: string; tone: string; value: number; groups: string }) {
+  return (
+    <div className="min-w-0 rounded-2xl bg-white/[0.05] px-3.5 py-2.5 ring-1 ring-white/10">
+      <dt className="flex items-center gap-1.5 text-[12px] text-muted"><span className={`size-2 rounded-full ${tone}`} />{label}</dt>
+      <dd className="mt-1 truncate text-[17px] font-bold">{formatPaise(value)}</dd>
+      <dd className="text-[11.5px] text-muted">{groups}</dd>
     </div>
   )
 }
