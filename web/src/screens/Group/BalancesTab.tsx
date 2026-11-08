@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../../lib/api'
+import { useIdempotencyKey } from '../../lib/idempotency'
 import { formatPaise, hundredthsToInput, parseHundredths } from '../../lib/money'
 import { label, type GroupData, type Transfer, type User } from '../../lib/types'
 import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Tile, tap, inputCls, useFeedback } from '../../ui'
@@ -8,6 +9,7 @@ import { who } from './shared'
 export function BalancesTab({ data, me, onChanged }: { data: GroupData; me: User; onChanged: () => void }) {
   const { toast } = useFeedback()
   const [paying, setPaying] = useState<Transfer | null>(null)
+  const payKey = useIdempotencyKey()
   const plan = data.balances.settleUp
 
   return (
@@ -43,7 +45,8 @@ export function BalancesTab({ data, me, onChanged }: { data: GroupData; me: User
       <PaymentSheet transfer={paying} me={me} onClose={() => setPaying(null)} onSubmit={async (paise) => {
         const t = paying!
         try {
-          await api.addSettlement(data.group.id, t.from.id, t.to.id, paise)
+          await api.addSettlement(data.group.id, t.from.id, t.to.id, paise, payKey.keyFor([t.from.id, t.to.id, paise]))
+          payKey.done()
           setPaying(null)
           onChanged()
         } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }

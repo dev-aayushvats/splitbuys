@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchWithRetry, NetworkError, parseBody, RequestTimeoutError } from './http'
+import { fetchWithRetry, IDEMPOTENCY_HEADER, NetworkError, parseBody, RequestTimeoutError } from './http'
 
 const ok = (status = 200) => new Response('{}', { status })
 const plan = { timeoutMs: 1000, retries: 1, retryDelayMs: 100 }
@@ -67,6 +67,30 @@ describe('fetchWithRetry', () => {
       expect((await fetchWithRetry(unavailable, '/x', { method }, plan)).status).toBe(503)
       expect(unavailable).toHaveBeenCalledTimes(1)
     }
+  })
+
+  it('repeats a write that carries an idempotency key, because the server will not apply it twice', async () => {
+    const init = { method: 'POST', headers: { [IDEMPOTENCY_HEADER]: 'abc12345-key' } }
+    const afterNetworkError = vi.fn().mockRejectedValueOnce(new TypeError('offline')).mockResolvedValueOnce(ok(201))
+    const first = fetchWithRetry(afterNetworkError, '/x', init, plan)
+    await vi.advanceTimersByTimeAsync(100)
+    expect((await first).status).toBe(201)
+    expect(afterNetworkError).toHaveBeenCalledTimes(2)
+
+    const after503 = vi.fn().mockResolvedValueOnce(ok(503)).mockResolvedValueOnce(ok(201))
+    const second = fetchWithRetry(after503, '/x', init, plan)
+    await vi.advanceTimersByTimeAsync(100)
+    expect((await second).status).toBe(201)
+    expect(after503).toHaveBeenCalledTimes(2)
+  })
+
+  it('sends the same key on every attempt of one request', async () => {
+    const fetchFn = vi.fn().mockRejectedValueOnce(new TypeError('offline')).mockResolvedValueOnce(ok(201))
+    const promise = fetchWithRetry(fetchFn, '/x', { method: 'POST', headers: { [IDEMPOTENCY_HEADER]: 'same-key-1234' } }, plan)
+    await vi.advanceTimersByTimeAsync(100)
+    await promise
+    const keys = fetchFn.mock.calls.map(([, init]) => new Headers(init?.headers).get(IDEMPOTENCY_HEADER))
+    expect(keys).toEqual(['same-key-1234', 'same-key-1234'])
   })
 
   it('aborts a request that exceeds the deadline and reports a timeout', async () => {

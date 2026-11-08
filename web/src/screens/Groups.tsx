@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useIdempotencyKey } from '../lib/idempotency'
 import { formatPaise } from '../lib/money'
 import { label, type GroupSummary } from '../lib/types'
 import {
@@ -15,6 +16,7 @@ export function GroupsScreen() {
   const { toast } = useFeedback()
   const { data: groups, error, loading, reload } = useAsync(() => api.groups(), [])
   const [creating, setCreating] = useState(false)
+  const createKey = useIdempotencyKey()
   const [menu, setMenu] = useState(false)
   const [picking, setPicking] = useState(false)
   const me = user!
@@ -90,7 +92,8 @@ export function GroupsScreen() {
 
       <NewGroupSheet open={creating} onClose={() => setCreating(false)} onCreate={async (name) => {
         try {
-          const g = await api.createGroup(name)
+          const g = await api.createGroup(name, createKey.keyFor(name))
+          createKey.done()
           setCreating(false)
           nav(`/groups/${g.id}`)
         } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }

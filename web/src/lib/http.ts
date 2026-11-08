@@ -15,14 +15,19 @@ export class NetworkError extends Error {
 export interface FetchPlan {
   /** Per attempt. A sleeping Neon database can take several seconds to wake, so this is generous. */
   timeoutMs?: number
-  /** Extra attempts after the first; only used for GET and HEAD. */
+  /** Extra attempts after the first; only used for GET, HEAD and requests that carry an Idempotency-Key. */
   retries?: number
   retryDelayMs?: number
 }
 
-// Only reads are repeated. A POST or PUT that timed out may already have been applied by the server, and there are no
-// idempotency keys yet, so repeating it automatically could create a duplicate.
+export const IDEMPOTENCY_HEADER = 'Idempotency-Key'
+
+// Reads are always safe to repeat. A write that timed out may already have been applied by the server, so it is only
+// repeated when it carries an Idempotency-Key: the server then answers a repeat with the original result instead of
+// creating a second copy.
 const REPEATABLE = new Set(['GET', 'HEAD'])
+const isRepeatable = (method: string, init: RequestInit) =>
+  REPEATABLE.has(method) || new Headers(init.headers).has(IDEMPOTENCY_HEADER)
 // "bad gateway", "unavailable", "gateway timeout": the proxy could not reach the app, typically while it restarts
 const TEMPORARY_STATUS = new Set([502, 503, 504])
 
@@ -35,7 +40,7 @@ export async function fetchWithRetry(
   { timeoutMs = 20_000, retries = 1, retryDelayMs = 1_000 }: FetchPlan = {},
 ): Promise<Response> {
   const method = (init.method ?? 'GET').toUpperCase()
-  const attempts = REPEATABLE.has(method) ? retries + 1 : 1
+  const attempts = isRepeatable(method, init) ? retries + 1 : 1
 
   for (let attempt = 1; ; attempt++) {
     const controller = new AbortController()
