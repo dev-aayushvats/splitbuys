@@ -86,7 +86,7 @@ class BackupApiTest extends ApiTest {
     }
 
     @Test
-    void aBackupCoversEveryApplicationTableButNotSignInCodes() throws Exception {
+    void aBackupCoversEveryApplicationTableButNotShortLivedOnes() throws Exception {
         signIn("Asha");
         ResultActions created = admin(true, TOKEN).andExpect(status().isCreated());
         java.util.Map<String, Object> rows = json(created, "$.rows");
@@ -94,7 +94,7 @@ class BackupApiTest extends ApiTest {
         Set<String> inDatabase = Set.copyOf(jdbc.queryForList(
                 "SELECT table_name FROM information_schema.tables WHERE table_schema = current_schema() AND table_type = 'BASE TABLE'", String.class));
         Set<String> expected = new java.util.HashSet<>(inDatabase);
-        expected.removeAll(Set.of("flyway_schema_history", "otp_code"));
+        expected.removeAll(Set.of("flyway_schema_history", "otp_code", "idempotency_key"));
         assertEquals(expected, dumped, "a new table must be added to BackupService.TABLES (or excluded on purpose)");
     }
 

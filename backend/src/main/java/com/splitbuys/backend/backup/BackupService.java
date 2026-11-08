@@ -60,7 +60,10 @@ import org.springframework.stereotype.Service;
 public class BackupService {
     private static final Logger log = LoggerFactory.getLogger(BackupService.class);
 
-    /** Parents before children, so the same order is valid for loading (and reversed for truncating). */
+    /**
+     * Parents before children, so the same order is valid for loading (and reversed for truncating). Deliberately absent:
+     * otp_code and idempotency_key, which are short-lived by design and worthless after a restore.
+     */
     static final List<String> TABLES = List.of("app_user", "expense_group", "group_member", "expense", "expense_share", "settlement");
     /** Tables whose {@code id} comes from an identity sequence that must be advanced after loading explicit ids. */
     private static final List<String> IDENTITY_TABLES = List.of("app_user", "expense_group", "expense", "expense_share", "settlement");
