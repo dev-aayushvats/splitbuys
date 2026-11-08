@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidUpi, normalizeUpi } from './upi'
+import { canPayViaUpi, isValidUpi, normalizeUpi } from './upi'
 
 describe('upi id', () => {
   it('accepts real-world shapes', () => {
@@ -14,5 +14,13 @@ describe('upi id', () => {
   })
   it('normalises case and whitespace like the server', () => {
     expect(normalizeUpi('  Asha.K@OkBank ')).toBe('asha.k@okbank')
+  })
+})
+
+describe('canPayViaUpi', () => {
+  it('needs a link and an amount within the one lakh limit', () => {
+    expect(canPayViaUpi({ upiLink: 'upi://pay', amountPaise: 10_000_000 })).toBe(true)
+    expect(canPayViaUpi({ upiLink: 'upi://pay', amountPaise: 10_000_001 })).toBe(false)
+    expect(canPayViaUpi({ upiLink: null, amountPaise: 100 })).toBe(false)
   })
 })

@@ -2,15 +2,19 @@ import { useState } from 'react'
 import { useRecordPayment } from '../../lib/mutations'
 import { useIdempotencyKey } from '../../lib/idempotency'
 import { formatPaise, hundredthsToInput, parseHundredths } from '../../lib/money'
+import { canPayViaUpi } from '../../lib/upi'
 import { label, type GroupData, type Transfer, type User } from '../../lib/types'
-import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Tile, tap, inputCls, useFeedback } from '../../ui'
+import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Spinner, Tile, tap, inputCls, useFeedback } from '../../ui'
 import { who } from './shared'
 
-export function BalancesTab({ data, me }: { data: GroupData; me: User }) {
+/** `fresh`: the balances on screen have just been confirmed by the server, not merely remembered from an earlier visit. */
+export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fresh: boolean }) {
   const record = useRecordPayment(data.group.id)
-  const [paying, setPaying] = useState<Transfer | null>(null)
+  // remember which transfer is open, not a copy of it: the amount and link must follow the data as it is refreshed
+  const [payingPair, setPayingPair] = useState<{ from: number; to: number } | null>(null)
   const payKey = useIdempotencyKey()
   const plan = data.balances.settleUp
+  const paying = payingPair ? plan.find((t) => t.from.id === payingPair.from && t.to.id === payingPair.to) ?? null : null
 
   return (
     <div className="space-y-6">
@@ -21,7 +25,7 @@ export function BalancesTab({ data, me }: { data: GroupData; me: User }) {
             <Tile key={`${t.from.id}-${t.to.id}`} leading={<AvatarStack users={[t.from, t.to]} size={34} max={2} />}
               title={`${who(t.from, me)} ${t.from.id === me.id ? 'pay' : 'pays'} ${t.to.id === me.id ? 'you' : label(t.to)}`}
               subtitle={formatPaise(t.amountPaise)}
-              trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPaying(t)}>{t.upiLink ? 'Pay' : 'Record'}</PillButton>} />
+              trailing={<PillButton className="h-9 px-3.5 text-[13px]" onClick={() => setPayingPair({ from: t.from.id, to: t.to.id })}>{canPayViaUpi(t) ? 'Pay' : 'Record'}</PillButton>} />
           ))}
         </Dashed>
       </section>
@@ -42,24 +46,27 @@ export function BalancesTab({ data, me }: { data: GroupData; me: User }) {
         </div>
       </section>
 
-      <PaymentSheet transfer={paying} me={me} onClose={() => setPaying(null)} onSubmit={async (paise) => {
+      <PaymentSheet transfer={paying} me={me} fresh={fresh} onClose={() => setPayingPair(null)} onSubmit={async (paise) => {
         const t = paying!
         // the sheet closes and the balances update at once; a failure rolls them back and shows the error
         record.mutate({ fromId: t.from.id, toId: t.to.id, amountPaise: paise, key: payKey.keyFor([t.from.id, t.to.id, paise]) }, { onSuccess: payKey.done })
-        setPaying(null)
+        setPayingPair(null)
       }} />
     </div>
   )
 }
 
-function PaymentSheet({ transfer, me, onClose, onSubmit }: {
-  transfer: Transfer | null; me: User; onClose: () => void; onSubmit: (paise: number) => Promise<void>
+function PaymentSheet({ transfer, me, fresh, onClose, onSubmit }: {
+  transfer: Transfer | null; me: User; fresh: boolean; onClose: () => void; onSubmit: (paise: number) => Promise<void>
 }) {
   return (
     <Sheet open={!!transfer} onClose={onClose} title={transfer ? `${who(transfer.from, me)} → ${who(transfer.to, me)}` : ''}>
       {transfer && (
         <div className="space-y-5">
-          {transfer.upiLink && <UpiPay transfer={transfer} />}
+          {canPayViaUpi(transfer) && <UpiPay transfer={transfer} fresh={fresh} />}
+          {transfer.upiLink && !canPayViaUpi(transfer) && (
+            <p className="px-1 text-[12.5px] text-muted">UPI apps don't allow a single payment above ₹1,00,000. Pay in parts, then record each payment below.</p>
+          )}
           <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />
         </div>
       )}
@@ -68,17 +75,24 @@ function PaymentSheet({ transfer, me, onClose, onSubmit }: {
 }
 
 /** Opens the user's UPI app with the receiver and amount filled in. It cannot tell whether the payment happened. */
-function UpiPay({ transfer }: { transfer: Transfer }) {
+function UpiPay({ transfer, fresh }: { transfer: Transfer; fresh: boolean }) {
   const { toast } = useFeedback()
   async function copy() {
     try { await navigator.clipboard.writeText(transfer.upiId!); toast('UPI ID copied') } catch { toast('Could not copy') }
   }
   return (
     <div className="space-y-3">
-      <a href={transfer.upiLink!} onClick={tap}
-        className="btn-accent flex h-13 w-full items-center justify-center gap-2 rounded-full py-3.5 font-bold">
-        <Icon name="payments" size={20} /> Pay {formatPaise(transfer.amountPaise)} via UPI
-      </a>
+      {fresh ? (
+        <a href={transfer.upiLink!} onClick={tap}
+          className="btn-accent flex h-13 w-full items-center justify-center gap-2 rounded-full py-3.5 font-bold">
+          <Icon name="payments" size={20} /> Pay {formatPaise(transfer.amountPaise)} via UPI
+        </a>
+      ) : (
+        // the amount may have changed since this was last loaded: wait for the server before offering to pay it
+        <button type="button" disabled aria-busy className="flex h-13 w-full items-center justify-center gap-2 rounded-full bg-white/10 py-3.5 font-bold text-muted">
+          <Spinner /> Waiting for the latest amount…
+        </button>
+      )}
       <div className="flex items-center gap-2 rounded-[20px] bg-black/25 py-1.5 pl-3.5 pr-1.5 ring-1 ring-white/10">
         <span className="min-w-0 flex-1 select-all truncate text-[13px] text-muted">{label(transfer.to)} · {transfer.upiId}</span>
         <PillButton onClick={copy} className="h-9 px-3.5 text-[13px]"><Icon name="copy" size={15} />Copy</PillButton>

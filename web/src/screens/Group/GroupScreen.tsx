@@ -15,7 +15,7 @@ export function GroupScreen() {
   const nav = useNavigate()
   const { user } = useAuth()
   const { toast, confirm } = useFeedback()
-  const { data, error, isPending: loading, refetch } = useGroupData(id)
+  const { data, error, isPending: loading, isFetching, isRefetchError, refetch } = useGroupData(id)
   const reload = () => { void refetch() }
   const rename = useRenameGroup(id)
   const regenerate = useRegenerateInvite(id)
@@ -70,7 +70,7 @@ export function GroupScreen() {
           if (Math.abs(dx) > 64 && Math.abs(dx) > Math.abs(dy) * 1.6) goTo(Math.min(2, Math.max(0, tab + (dx < 0 ? 1 : -1))))
         }}>
         {tab === 0 && <ExpensesTab data={data} me={me} />}
-        {tab === 1 && <BalancesTab data={data} me={me} />}
+        {tab === 1 && <BalancesTab data={data} me={me} fresh={!isFetching && !isRefetchError} />}
         {tab === 2 && <MembersTab data={data} me={me} />}
       </main>
 
