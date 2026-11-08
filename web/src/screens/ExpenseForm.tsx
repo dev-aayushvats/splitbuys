@@ -181,7 +181,7 @@ function PersonRow({ user, name, selected, onToggle, field }: {
           onToggle()
         }
       }}
-      className={`glass-lite flex items-center gap-3 rounded-[24px] py-2.5 pl-3 pr-3.5 transition-shadow ${selected ? 'shadow-[0_0_0_1.5px_rgb(250_210_70/0.6)]' : ''}`}>
+      className={`glass-lite flex items-center gap-3 rounded-[24px] py-2.5 pl-3 pr-3.5 transition-shadow ${selected ? 'shadow-[0_0_0_1.5px_rgb(255_140_15/0.6)]' : ''}`}>
       <div className={selected ? '' : 'opacity-40'}><Avatar user={user} size={40} /></div>
       <span className={`min-w-0 flex-1 truncate font-semibold ${selected ? '' : 'text-muted'}`}>{name}</span>
       {field}
