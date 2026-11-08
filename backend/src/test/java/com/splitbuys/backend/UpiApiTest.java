@@ -39,7 +39,7 @@ class UpiApiTest extends ApiTest {
     }
 
     @Test
-    void onlyTheOneWhoMustPayGetsTheUpiIdAndLink() throws Exception {
+    void onlyTheOneWhoMustPayGetsTheUpiId() throws Exception {
         Session asha = signIn("Asha K");
         Session ben = signIn("Ben");
         Session chi = signIn("Chi");
@@ -49,27 +49,25 @@ class UpiApiTest extends ApiTest {
         post("/api/v1/groups/" + g + "/expenses", asha,
                 equalExpense("Dinner", 3000, asha.userId(), asha.userId(), ben.userId(), chi.userId())).andExpect(status().isCreated());
 
-        // Ben sees the UPI details on his own payment to Asha, and a link carrying receiver, name, rupee amount and note
+        // Ben sees the UPI ID on his own payment to Asha
         get("/api/v1/groups/" + g + "/balances", ben)
                 .andExpect(jsonPath("$.settleUp[?(@.from.id == " + ben.userId() + ")].upiId").value(hasItem("asha.k@okbank")))
-                .andExpect(jsonPath("$.settleUp[?(@.from.id == " + ben.userId() + ")].upiLink")
-                        .value(hasItem(startsWith("upi://pay?pa=asha.k@okbank&pn=Asha%20K&am=10.00&cu=INR&tn="))))
+                .andExpect(jsonPath("$.settleUp[?(@.from.id == " + ben.userId() + ")].upiLink").doesNotExist())
                 // ...but not on Chi's payment, which is none of his business
                 .andExpect(jsonPath("$.settleUp[?(@.from.id == " + chi.userId() + ")].upiId").value(hasItem(nullValue())))
                 .andExpect(jsonPath("$.totalSpentPaise").value(3000));
-        // the receiver herself gets neither
-        get("/api/v1/groups/" + g + "/balances", asha).andExpect(jsonPath("$.settleUp[0].upiId").value(nullValue()))
-                .andExpect(jsonPath("$.settleUp[0].upiLink").value(nullValue()));
+        // the receiver herself does not
+        get("/api/v1/groups/" + g + "/balances", asha).andExpect(jsonPath("$.settleUp[0].upiId").value(nullValue()));
     }
 
     @Test
-    void noUpiIdMeansNoLinkAndOtherEndpointsNeverExposeIt() throws Exception {
+    void otherEndpointsNeverExposeTheUpiId() throws Exception {
         Session asha = signIn("Asha");
         Session ben = signIn("Ben");
         long g = groupOf(asha, ben);
         post("/api/v1/groups/" + g + "/expenses", asha, equalExpense("Cab", 1000, asha.userId(), asha.userId(), ben.userId()))
                 .andExpect(status().isCreated());
-        get("/api/v1/groups/" + g + "/balances", ben).andExpect(jsonPath("$.settleUp[0].upiLink").value(nullValue()));
+        get("/api/v1/groups/" + g + "/balances", ben).andExpect(jsonPath("$.settleUp[0].upiId").value(nullValue()));
 
         put("/api/v1/me/upi", asha, "{\"upiId\":\"asha@okbank\"}").andExpect(status().isOk());
         // her ID must not leak through group, member or expense payloads that others can read

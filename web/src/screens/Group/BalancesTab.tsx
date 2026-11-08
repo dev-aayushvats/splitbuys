@@ -64,7 +64,7 @@ function PaymentSheet({ transfer, me, fresh, onClose, onSubmit }: {
       {transfer && (
         <div className="space-y-5">
           {canPayViaUpi(transfer) && <UpiPay transfer={transfer} fresh={fresh} />}
-          {transfer.upiLink && !canPayViaUpi(transfer) && (
+          {transfer.upiId && !canPayViaUpi(transfer) && (
             <p className="px-1 text-[12.5px] text-muted">UPI apps don't allow a single payment above ₹1,00,000. Pay in parts, then record each payment below.</p>
           )}
           <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />
@@ -75,9 +75,9 @@ function PaymentSheet({ transfer, me, fresh, onClose, onSubmit }: {
 }
 
 /**
- * Copy-first: banks and UPI apps (Kotak, Samsung Money, GPay) commonly refuse a payment started from a link to a personal
- * UPI ID, so the dependable path is to copy the ID and the amount into the app. The link is kept as a best-effort extra.
- * No UPI app can tell us whether the payment happened.
+ * The receiver's UPI ID and the amount, to copy into the user's own UPI app. There is deliberately no `upi://pay` link:
+ * Kotak, Samsung Money and GPay refuse payments started from a link to a personal UPI ID. No UPI app can tell us whether
+ * the payment happened, so the user records it below.
  */
 function UpiPay({ transfer, fresh }: { transfer: Transfer; fresh: boolean }) {
   const { toast } = useFeedback()
@@ -101,17 +101,6 @@ function UpiPay({ transfer, fresh }: { transfer: Transfer; fresh: boolean }) {
       <p className="px-1 text-[12.5px] text-muted">
         Pay this UPI ID in your UPI app, then record it below so everyone's balance updates. We can't tell whether you paid.
       </p>
-      {fresh ? (
-        <a href={transfer.upiLink!} onClick={tap}
-          className="glass-btn flex h-11 w-full items-center justify-center gap-2 rounded-full text-sm font-semibold">
-          <Icon name="payments" size={18} /> Try opening your UPI app
-        </a>
-      ) : (
-        <button type="button" disabled aria-busy className="flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white/10 text-sm font-semibold text-muted">
-          <Spinner className="size-4" /> Waiting for the latest amount…
-        </button>
-      )}
-      <p className="px-1 text-[12px] text-muted/80">Some banks and apps block payments started from a link. If yours says the payment is not allowed, use the copied ID and amount instead.</p>
     </div>
   )
 }

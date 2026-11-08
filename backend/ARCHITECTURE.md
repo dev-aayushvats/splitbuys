@@ -94,12 +94,13 @@ between rows with the same timestamp. It is done in two steps (page the ids in S
 because a SQL `LIMIT` combined with a collection fetch makes Hibernate page in memory, which loads the whole history.
 Group totals come from the balances endpoint (`totalSpentPaise`), so clients need not download everything to add it up.
 
-## UPI payment links
+## UPI IDs
 
 A user can store a UPI ID (`PUT/DELETE /api/v1/me/upi`, validated and lower-cased server side). It is private: it is
 returned only to its owner (`ProfileDto`, never the shared `UserDto`) and in the settle-up plan only to the person who has to
-pay it, together with a ready `upi://pay?...` link (payee, rupee amount, note). Nobody else in the group sees it. A UPI link
-opens the payment app but cannot confirm the payment, so the payer still records the settlement afterwards.
+pay it. Nobody else in the group sees it. The app shows it with a copy button; the payer pays in their own UPI app and then
+records the settlement, because the app cannot confirm a payment. There is deliberately no `upi://pay` link: Kotak, Samsung
+Money and GPay refuse payments started from a link to a personal UPI ID, so it only produced error screens.
 
 ## API
 

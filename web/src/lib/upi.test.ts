@@ -18,9 +18,9 @@ describe('upi id', () => {
 })
 
 describe('canPayViaUpi', () => {
-  it('needs a link and an amount within the one lakh limit', () => {
-    expect(canPayViaUpi({ upiLink: 'upi://pay', amountPaise: 10_000_000 })).toBe(true)
-    expect(canPayViaUpi({ upiLink: 'upi://pay', amountPaise: 10_000_001 })).toBe(false)
-    expect(canPayViaUpi({ upiLink: null, amountPaise: 100 })).toBe(false)
+  it('needs a UPI ID and an amount within the one lakh limit', () => {
+    expect(canPayViaUpi({ upiId: 'a@upi', amountPaise: 10_000_000 })).toBe(true)
+    expect(canPayViaUpi({ upiId: 'a@upi', amountPaise: 10_000_001 })).toBe(false)
+    expect(canPayViaUpi({ upiId: null, amountPaise: 100 })).toBe(false)
   })
 })
