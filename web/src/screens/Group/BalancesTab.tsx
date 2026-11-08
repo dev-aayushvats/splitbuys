@@ -4,7 +4,7 @@ import { useIdempotencyKey } from '../../lib/idempotency'
 import { formatPaise, hundredthsToInput, parseHundredths } from '../../lib/money'
 import { canPayViaUpi } from '../../lib/upi'
 import { label, type GroupData, type Transfer, type User } from '../../lib/types'
-import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Spinner, Tile, tap, inputCls, useFeedback } from '../../ui'
+import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Spinner, Tile, inputCls, useFeedback } from '../../ui'
 import { who } from './shared'
 
 /** `fresh`: the balances on screen have just been confirmed by the server, not merely remembered from an earlier visit. */
