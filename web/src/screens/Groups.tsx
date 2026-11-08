@@ -3,18 +3,22 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useIdempotencyKey } from '../lib/idempotency'
+import { useRefreshGroups } from '../lib/mutations'
+import { useGroups } from '../lib/queries'
 import { formatPaise } from '../lib/money'
 import { label, type GroupSummary } from '../lib/types'
 import {
   Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, RoundButton, Screen, SectionTitle,
-  Sheet, Skeleton, Tile, inputCls, tap, useAsync, useFeedback,
+  Sheet, Skeleton, Tile, inputCls, tap, useFeedback,
 } from '../ui'
 
 export function GroupsScreen() {
   const { user } = useAuth()
   const nav = useNavigate()
   const { toast } = useFeedback()
-  const { data: groups, error, loading, reload } = useAsync(() => api.groups(), [])
+  const { data: groups, error, isPending: loading, refetch } = useGroups()
+  const reload = () => { void refetch() }
+  const refresh = useRefreshGroups()
   const [creating, setCreating] = useState(false)
   const createKey = useIdempotencyKey()
   const [menu, setMenu] = useState(false)
@@ -95,6 +99,7 @@ export function GroupsScreen() {
           const g = await api.createGroup(name, createKey.keyFor(name))
           createKey.done()
           setCreating(false)
+          void refresh()
           nav(`/groups/${g.id}`)
         } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
       }} />

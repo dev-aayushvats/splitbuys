@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
+import { useRefreshGroups } from '../lib/mutations'
 import { AuthPage, ConfirmButton, Dashed, Screen, Spinner, useAsync, useFeedback } from '../ui'
 
 export function JoinScreen() {
   const { token = '' } = useParams()
   const nav = useNavigate()
   const { toast } = useFeedback()
+  const refresh = useRefreshGroups()
   const [busy, setBusy] = useState(false)
   const { data: p, error, loading } = useAsync(() => api.previewInvite(token), [token])
 
@@ -23,6 +25,7 @@ export function JoinScreen() {
     setBusy(true)
     try {
       const g = await api.joinInvite(token)
+      void refresh(g.id)
       nav(`/groups/${g.id}`, { replace: true })
     } catch (e) {
       setBusy(false)

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useIdempotencyKey } from '../lib/idempotency'
+import { useRefreshGroups } from '../lib/mutations'
 import { hundredthsToInput, parseHundredths } from '../lib/money'
 import { evaluateSplit } from '../lib/splits'
 import { label, type Expense, type GroupDetail, type SplitType, type User } from '../lib/types'
@@ -45,6 +46,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   const nav = useNavigate()
   const { user } = useAuth()
   const { toast, confirm } = useFeedback()
+  const refresh = useRefreshGroups()
   const me = user!
   const members = useMemo(
     () => [...group.members].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id)),
@@ -91,6 +93,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
     try {
       if (expense) await api.updateExpense(group.id, expense.id, body)
       else await api.addExpense(group.id, body, createKey.keyFor(body))
+      void refresh(group.id)
       nav(-1)
     } catch (e) {
       setBusy(false)
@@ -101,7 +104,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   async function remove() {
     if (!expense || !(await confirm('Delete this expense?'))) return
     setBusy(true)
-    try { await api.deleteExpense(group.id, expense.id); nav(-1) } catch (e) {
+    try { await api.deleteExpense(group.id, expense.id); void refresh(group.id); nav(-1) } catch (e) {
       setBusy(false)
       toast(e instanceof Error ? e.message : 'Something went wrong')
     }

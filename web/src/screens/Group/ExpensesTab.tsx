@@ -1,16 +1,19 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
+import { useDeleteExpense, useDeleteSettlement } from '../../lib/mutations'
 import { dayLabel, formatDate, formatPaise } from '../../lib/money'
 import { mergeTimeline } from '../../lib/timeline'
 import { label, type Expense, type GroupData, type Settlement, type User } from '../../lib/types'
 import { Avatar, EmptyState, IconBadge, Sheet, Tile, useFeedback } from '../../ui'
 import { who } from './shared'
 
-export function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User; onChanged: () => void }) {
+export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
   const nav = useNavigate()
   const { toast, confirm } = useFeedback()
   const gid = data.group.id
+  const deleteExpense = useDeleteExpense(gid)
+  const deleteSettlement = useDeleteSettlement(gid)
   const [detail, setDetail] = useState<Expense | null>(null)
 
   // First page comes with the group data; "Load more" appends older pages. A reload (after any change) starts over.
@@ -74,7 +77,7 @@ export function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User
         trailing={<span className="font-extrabold text-pos">{formatPaise(s.amountPaise)}</span>}
         onClick={async () => {
           if (!(await confirm(`Delete this payment of ${formatPaise(s.amountPaise)}?`))) return
-          try { await api.deleteSettlement(gid, s.id); onChanged() } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
+          deleteSettlement.mutate(s.id)
         }} />
     )
   }
@@ -95,7 +98,8 @@ export function ExpensesTab({ data, me, onChanged }: { data: GroupData; me: User
         onEdit={(e) => nav(`/groups/${gid}/expense/${e.id}`)}
         onDelete={async (e) => {
           if (!(await confirm('Delete this expense?'))) return
-          try { await api.deleteExpense(gid, e.id); setDetail(null); onChanged() } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
+          setDetail(null)
+          deleteExpense.mutate(e.id)
         }} />
       {days.map((d) => (
         <section key={d.day}>
