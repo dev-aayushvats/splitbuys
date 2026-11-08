@@ -15,6 +15,7 @@ com.splitbuys.backend
 ├── auth/            email OTP + access tokens
 ├── group/           groups, membership, invites          declares LedgerPort
 ├── ledger/          expenses, payments, balances         implements group.LedgerPort
+├── account/         deleting an account (sits on user, group, auth; nothing depends on it)
 ├── backup/          database backups (PostgreSQL) and restore, behind the admin token
 └── split/           pure split / debt-simplification maths (no framework imports)
 ```
@@ -53,7 +54,7 @@ With `SPRING_PROFILES_ACTIVE=prod` the app refuses to start unless real email is
 ## Data
 
 Flyway owns the schema, with one migration folder per database (`db/migration/sqlite`, `db/migration/postgresql`); Hibernate never alters it. `V1` baselines the original
-schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns. Later migrations add columns (`upi_id`: SQLite `V3`, PostgreSQL `V2`). `idempotency_key` (SQLite `V4`, PostgreSQL `V3`) holds replayable responses for 24 hours.
+schema (idempotent, so existing databases are adopted), `V2` adds foreign keys, indexes and `@Version` columns. Later migrations add columns (`upi_id`: SQLite `V3`, PostgreSQL `V2`). `idempotency_key` (SQLite `V4`, PostgreSQL `V3`) holds replayable responses for 24 hours. `deleted_at` on `app_user` (SQLite `V5`, PostgreSQL `V4`) marks a deleted account.
 Concurrent edits to a group or expense are rejected with 409 instead of silently overwriting. Balances are computed
 with four aggregate queries however many groups are listed. SQLite is the local default. PostgreSQL (Neon) is selected with
 `SPRING_PROFILES_ACTIVE=postgres` (see `.env.example`); that profile turns on Hibernate schema validation (SQLite's
@@ -108,3 +109,13 @@ Versioned under `/api/v1`. Money is integer paise. All errors are problem docume
 
 * The rate limiter is in-memory (single instance); use a gateway or Redis to scale out.
 * Token revocation / refresh tokens.
+
+## Deleting an account
+`DELETE /api/v1/me` with the person's own email in the body (`account/AccountService`, one transaction): refuse while they
+owe or are owed money in any group (the same rule as leaving a group, so other members' balances keep adding up), leave
+every group, replace email/name/UPI ID on the user row with placeholders (the row stays because shared expenses point at
+it; the real email becomes free to sign up with again), and drop pending sign-in codes and remembered requests.
+Their tokens stop working through `ActiveAccountValidator`: a JWT proves who issued it, not that the account still
+exists, so each request also checks the account is active. That answer is cached for 15 s (`app.auth.active-cache-seconds`)
+and dropped at once on this instance when an account is closed; another instance would take up to the cache lifetime to
+notice. Backups taken before a deletion still contain the old data until they are rotated out.

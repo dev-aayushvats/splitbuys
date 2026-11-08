@@ -5,4 +5,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 interface UserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByEmail(String email);
+
+    boolean existsByIdAndDeletedAtIsNull(long id);
 }

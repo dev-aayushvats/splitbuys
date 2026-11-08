@@ -1,6 +1,9 @@
 package com.splitbuys.backend.user;
 
 import com.splitbuys.backend.common.error.NotFoundException;
+import com.splitbuys.backend.common.security.AccountClosed;
+import java.time.Clock;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,9 +16,13 @@ public class UserService {
     }
 
     private final UserRepository users;
+    private final ApplicationEventPublisher events;
+    private final Clock clock;
 
-    public UserService(UserRepository users) {
+    public UserService(UserRepository users, ApplicationEventPublisher events, Clock clock) {
         this.users = users;
+        this.events = events;
+        this.clock = clock;
     }
 
     public AppUser require(long id) {
@@ -46,6 +53,13 @@ public class UserService {
         AppUser user = require(id);
         user.setUpiId(null);
         return ProfileDto.from(user);
+    }
+
+    /** Erases the person's identity (see {@link AppUser#closeAccount}) and announces it so their tokens stop working. */
+    @Transactional
+    public void closeAccount(long id) {
+        require(id).closeAccount(clock.instant());
+        events.publishEvent(new AccountClosed(id));
     }
 
     @Transactional
