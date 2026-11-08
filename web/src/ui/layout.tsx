@@ -114,7 +114,7 @@ export function AuthPage({ title, subtitle, children }: { title: string; subtitl
   return (
     <Screen className="pt-safe pb-safe">
       <div className="flex flex-1 flex-col justify-center px-5 py-8">
-        <img src="/pwa-192.png" alt="" width={76} height={76} className="mx-auto size-[76px] rounded-[26px] shadow-[0_14px_36px_-12px_rgb(255_140_15/0.45)]" />
+        <img src="/pwa-192.png" alt="" width={88} height={88} className="mx-auto size-[88px] drop-shadow-[0_14px_24px_rgb(255_140_15/0.3)]" />
         <h1 className="mt-6 text-center text-[28px] font-extrabold">{title}</h1>
         {subtitle && <p className="mt-2 text-center text-muted">{subtitle}</p>}
         <div className="glass mt-7 space-y-5 rounded-[32px] p-5">{children}</div>

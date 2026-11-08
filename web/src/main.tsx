@@ -7,7 +7,6 @@ import { App } from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { AuthProvider } from './lib/auth'
 import { FeedbackProvider } from './ui'
-import { Splash } from './ui/splash'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -17,7 +16,6 @@ createRoot(document.getElementById('root')!).render(
         <AuthProvider>
           <FeedbackProvider>
             <App />
-            <Splash />
           </FeedbackProvider>
         </AuthProvider>
       </BrowserRouter>
