@@ -36,16 +36,14 @@ public class BalanceService {
                 .map(u -> new BalanceDto(UserDto.from(u), memberNet.get(u.getId())))
                 .toList();
         List<TransferDto> settleUp = DebtSimplifier.simplify(memberNet).stream()
-                .map(t -> transfer(byId.get(t.fromUserId()), byId.get(t.toUserId()), t.amountPaise(), userId, group))
+                .map(t -> transfer(byId.get(t.fromUserId()), byId.get(t.toUserId()), t.amountPaise(), userId))
                 .toList();
         return new BalancesResponse(balances, settleUp, netBalances.totalSpent(groupId));
     }
 
-    /** The receiver's UPI ID and a ready-to-open payment link go only to the person who has to pay. */
-    private static TransferDto transfer(AppUser from, AppUser to, long paise, long viewerId, ExpenseGroup group) {
+    /** The receiver's UPI ID goes only to the person who has to pay. */
+    private static TransferDto transfer(AppUser from, AppUser to, long paise, long viewerId) {
         String upiId = from.getId() == viewerId ? to.getUpiId() : null;
-        String link = upiId == null ? null
-                : UpiLink.build(upiId, to.getName() == null ? upiId : to.getName(), paise, "SplitBuys: " + group.getName());
-        return new TransferDto(UserDto.from(from), UserDto.from(to), paise, upiId, link);
+        return new TransferDto(UserDto.from(from), UserDto.from(to), paise, upiId);
     }
 }

@@ -21,8 +21,8 @@ export interface Expense {
 }
 export interface Settlement { id: number; fromUser: User; toUser: User; amountPaise: number; createdAt: string }
 export interface Balance { user: User; netPaise: number }
-// upiId / upiLink are present only when the signed-in user is the one who must pay and the receiver has set a UPI ID
-export interface Transfer { from: User; to: User; amountPaise: number; upiId: string | null; upiLink: string | null }
+// upiId is present only when the signed-in user is the one who must pay and the receiver has set a UPI ID
+export interface Transfer { from: User; to: User; amountPaise: number; upiId: string | null }
 export interface Balances { balances: Balance[]; settleUp: Transfer[]; totalSpentPaise: number }
 export interface Page<T> { items: T[]; nextCursor: string | null }
 

@@ -13,7 +13,7 @@ const base = (): GroupData => ({
   settlements: [{ id: 20, fromUser: b, toUser: a, amountPaise: 100, createdAt: '' }],
   settlementsCursor: null,
   balances: { balances: [{ user: a, netPaise: 400 }, { user: b, netPaise: -400 }], totalSpentPaise: 1000,
-    settleUp: [{ from: b, to: a, amountPaise: 400, upiId: 'a@upi', upiLink: 'upi://pay' }] },
+    settleUp: [{ from: b, to: a, amountPaise: 400, upiId: 'a@upi'}] },
 })
 const net = (d: GroupData) => d.balances.balances.map((x) => x.netPaise)
 
@@ -34,7 +34,7 @@ describe('optimistic updates', () => {
     expect(net(d)).toEqual([250, -250])
     expect(d.settlements).toHaveLength(2)
     expect(d.settlements[0]).toMatchObject({ amountPaise: 150, fromUser: b, toUser: a })
-    expect(d.balances.settleUp[0]).toMatchObject({ amountPaise: 250, upiLink: null })
+    expect(d.balances.settleUp[0]).toMatchObject({ amountPaise: 250 })
   })
   it('paying the whole amount clears that transfer from the plan', () => {
     expect(withSettlement(base(), 2, 1, 400).balances.settleUp).toEqual([])

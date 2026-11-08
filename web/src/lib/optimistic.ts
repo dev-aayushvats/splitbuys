@@ -30,7 +30,7 @@ export function withSettlement(d: GroupData, fromId: number, toId: number, amoun
   const next = shift(shift(d, fromId, amountPaise), toId, -amountPaise)
   const plan = d.balances.settleUp.flatMap((t) => {
     if (t.from.id !== fromId || t.to.id !== toId) return [t]
-    return amountPaise >= t.amountPaise ? [] : [{ ...t, amountPaise: t.amountPaise - amountPaise, upiLink: null }]
+    return amountPaise >= t.amountPaise ? [] : [{ ...t, amountPaise: t.amountPaise - amountPaise }]
   })
   const temp = { id: -Date.now(), fromUser: from, toUser: to, amountPaise, createdAt: new Date().toISOString() }
   return { ...next, settlements: [temp, ...d.settlements], balances: { ...next.balances, settleUp: plan } }
