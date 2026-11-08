@@ -9,6 +9,7 @@ interface AuthValue {
   setName: (name: string) => Promise<void>
   setUpi: (upiId: string) => Promise<void>
   clearUpi: () => Promise<void>
+  deleteAccount: (email: string) => Promise<void>
   signOut: () => void
 }
 
@@ -47,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async setName(name) { setUser(await api.setName(name)) },
     async setUpi(upiId) { setUser(await api.setUpi(upiId)) },
     async clearUpi() { setUser(await api.clearUpi()) },
+    // the server has erased the account, so the saved token is worthless: sign out only after it said yes
+    async deleteAccount(email) { await api.deleteAccount(email); signOut() },
   }), [user, ready, signOut])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
