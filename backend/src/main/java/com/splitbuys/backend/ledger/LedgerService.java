@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import com.splitbuys.backend.common.event.ExpenseAdded;
+import com.splitbuys.backend.common.event.PaymentRecorded;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -34,10 +37,12 @@ public class LedgerService {
     private final ExpenseRepository expenses;
     private final SettlementRepository settlements;
     private final IdempotencyService idempotency;
+    private final ApplicationEventPublisher events;
 
     LedgerService(GroupService groups, UserService users, ExpenseRepository expenses, SettlementRepository settlements,
-                  IdempotencyService idempotency) {
+                  IdempotencyService idempotency, ApplicationEventPublisher events) {
         this.idempotency = idempotency;
+        this.events = events;
         this.groups = groups;
         this.users = users;
         this.expenses = expenses;
@@ -66,9 +71,15 @@ public class LedgerService {
 
     private ExpenseDto addExpense(long groupId, long userId, ExpenseRequest req) {
         ExpenseGroup group = groups.requireMember(groupId, userId);
-        Expense expense = new Expense(group, users.require(userId));
+        AppUser actor = users.require(userId);
+        Expense expense = new Expense(group, actor);
         revise(expense, group, req);
-        return ExpenseDto.from(expenses.save(expense));
+        ExpenseDto saved = ExpenseDto.from(expenses.save(expense));
+        Map<Long, Long> shares = new LinkedHashMap<>();
+        saved.shares().forEach(s -> shares.put(s.user().id(), s.amountPaise()));
+        events.publishEvent(new ExpenseAdded(groupId, group.getName(), userId, label(actor), saved.id(), saved.description(),
+                saved.amountPaise(), saved.payer().id(), shares, group.getMembers().stream().map(AppUser::getId).toList()));
+        return saved;
     }
 
     public ExpenseDto updateExpense(long groupId, long expenseId, long userId, ExpenseRequest req) {
@@ -124,15 +135,23 @@ public class LedgerService {
         if (req.fromUserId().equals(req.toUserId())) {
             throw new InvalidRequestException("Payer and receiver must be different people");
         }
-        Settlement s = new Settlement(group, member(group, req.fromUserId()), member(group, req.toUserId()),
-                req.amountPaise(), users.require(userId));
-        return SettlementDto.from(settlements.save(s));
+        AppUser actor = users.require(userId);
+        AppUser from = member(group, req.fromUserId());
+        AppUser to = member(group, req.toUserId());
+        SettlementDto saved = SettlementDto.from(settlements.save(new Settlement(group, from, to, req.amountPaise(), actor)));
+        events.publishEvent(new PaymentRecorded(groupId, group.getName(), userId, label(actor), from.getId(), label(from),
+                to.getId(), label(to), saved.amountPaise()));
+        return saved;
     }
 
     public void deleteSettlement(long groupId, long settlementId, long userId) {
         groups.requireMember(groupId, userId);
         settlements.delete(settlements.findByIdAndGroup_Id(settlementId, groupId)
                 .orElseThrow(() -> new NotFoundException("Settlement not found")));
+    }
+
+    private static String label(AppUser u) {
+        return u.getName() == null || u.getName().isBlank() ? u.getEmail() : u.getName();
     }
 
     private Expense expense(long groupId, long expenseId) {

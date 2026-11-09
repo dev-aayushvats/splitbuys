@@ -6,6 +6,7 @@ import com.splitbuys.backend.common.error.InvalidRequestException;
 import com.splitbuys.backend.common.idempotency.IdempotencyService;
 import com.splitbuys.backend.group.GroupService;
 import com.splitbuys.backend.group.GroupSummary;
+import com.splitbuys.backend.push.PushService;
 import com.splitbuys.backend.user.UserService;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -21,7 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
  *       other members' balances must keep adding up;</li>
  *   <li>leave every group (a group left empty is erased with its history, as when the last member leaves normally);</li>
  *   <li>erase the identity: email, name and UPI ID, keeping the row that other people's history points at;</li>
- *   <li>drop pending sign-in codes and remembered requests;</li>
+ *   <li>drop pending sign-in codes, remembered requests and notification subscriptions;</li>
  *   <li>the account's tokens stop working (see ActiveAccountValidator).</li>
  * </ol>
  */
@@ -32,8 +33,10 @@ public class AccountService {
     private final GroupService groups;
     private final OtpService otp;
     private final IdempotencyService idempotency;
+    private final PushService push;
 
-    AccountService(UserService users, GroupService groups, OtpService otp, IdempotencyService idempotency) {
+    AccountService(UserService users, GroupService groups, OtpService otp, IdempotencyService idempotency, PushService push) {
+        this.push = push;
         this.users = users;
         this.groups = groups;
         this.otp = otp;
@@ -57,5 +60,6 @@ public class AccountService {
         users.closeAccount(userId);
         otp.forget(email);
         idempotency.forgetUser(userId);
+        push.forgetUser(userId);
     }
 }

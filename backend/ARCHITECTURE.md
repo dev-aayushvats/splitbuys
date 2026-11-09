@@ -102,6 +102,29 @@ pay it. Nobody else in the group sees it. The app shows it with a copy button; t
 records the settlement, because the app cannot confirm a payment. There is deliberately no `upi://pay` link: Kotak, Samsung
 Money and GPay refuse payments started from a link to a personal UPI ID, so it only produced error screens.
 
+## Push notifications
+
+Opt-in, per device. A browser subscribes with the server's public VAPID key and registers the subscription
+(`POST /api/v1/push/subscriptions`); `GET /api/v1/push/config` tells the app whether the feature is on. With no
+`VAPID_*` settings it is off, and with a partial set the app refuses to start.
+
+- **Trigger.** `LedgerService` publishes `ExpenseAdded` and `PaymentRecorded` (plain records in `common.event`) inside its
+  transaction. `push.PushNotifier` handles them `AFTER_COMMIT`, so a rolled-back or idempotently replayed request notifies
+  nobody, and hands the sending to a 2-thread pool with a 200-slot queue so a slow push service never slows a request.
+  `push` depends on `common` only; the ledger does not know it exists.
+- **Who is told.** Everyone in the group except the person who made the change; a payment goes only to the two people
+  in it. The text is built per recipient ("you owe ₹250").
+- **Delivery.** Best effort: no retries, failures are logged. A 404/410 from the push service means the device is gone and
+  its row is deleted. Messages are encrypted to the device (RFC 8291, `WebPushCrypto`, JDK only, checked against the RFC's test
+  vector) and authenticated with a VAPID token (RFC 8292, `Vapid`). TTL is a day.
+- **SSRF.** The server POSTs to a URL the client supplies, so `PushEndpoints` accepts only https URLs on the real push
+  services' hosts (Google, Apple, Mozilla, Windows), on the default port, with no credentials; redirects are never followed;
+  the check runs again at send time.
+- **Devices.** The endpoint is unique, so a phone used by someone else moves to them on subscribe. At most 10 per user. Account
+  deletion removes them. They are not backed up: the app re-registers on every launch.
+- **Not done.** Edits and deletions do not notify; there is no per-group mute; one malicious member could spam others (messages
+  collapse per group on the device, but the server does not rate limit them).
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.
