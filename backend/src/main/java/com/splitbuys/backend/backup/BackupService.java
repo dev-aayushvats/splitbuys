@@ -62,7 +62,9 @@ public class BackupService {
 
     /**
      * Parents before children, so the same order is valid for loading (and reversed for truncating). Deliberately absent:
-     * otp_code and idempotency_key, which are short-lived by design and worthless after a restore.
+     * otp_code and idempotency_key, which are short-lived by design and worthless after a restore, and push_subscription:
+     * device tokens that the app re-registers every time it opens, so a restore need not carry them (and a backup file
+     * need not hold them).
      */
     static final List<String> TABLES = List.of("app_user", "expense_group", "group_member", "expense", "expense_share", "settlement");
     /** Tables whose {@code id} comes from an identity sequence that must be advanced after loading explicit ids. */

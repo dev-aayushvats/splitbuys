@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { label } from '../lib/types'
 import { isValidUpi, normalizeUpi } from '../lib/upi'
 import { DeleteAccountSheet } from './DeleteAccount'
+import { NotificationsCard } from './Notifications'
 import { Avatar, Field, Icon, Screen, TopBar, inputCls, useFeedback } from '../ui'
 
 export function ProfileScreen() {
@@ -35,7 +36,7 @@ export function ProfileScreen() {
   }
 
   async function removeUpi() {
-    if (!(await confirm('Remove your UPI ID?\nPeople will no longer get a pay link for you.', 'Remove'))) return
+    if (!(await confirm('Remove your UPI ID?\nPeople will no longer see it when they settle up with you.', 'Remove'))) return
     setUpiBusy(true)
     try { await clearUpi(); setUpiText(''); toast('UPI ID removed') } catch (err) { toast(err instanceof Error ? err.message : 'Something went wrong') }
     setUpiBusy(false)
@@ -67,7 +68,7 @@ export function ProfileScreen() {
         </Field>
         {upiInvalid
           ? <p className="px-1 text-sm text-neg">Enter a valid UPI ID, like name@bank</p>
-          : <p className="px-1 text-[12.5px] text-muted">Shown only to people who owe you, as a pay link when they settle up.</p>}
+          : <p className="px-1 text-[12.5px] text-muted">Shown only to people who owe you, so they can pay you when they settle up.</p>}
         <div className="flex gap-3">
           {me.upiId && (
             <button type="button" onClick={removeUpi} disabled={upiBusy} className="glass-lite rounded-full px-5 py-3.5 font-semibold text-neg">Remove</button>
@@ -78,6 +79,8 @@ export function ProfileScreen() {
           </button>
         </div>
       </form>
+
+      <NotificationsCard />
 
       <div className="mt-auto px-5 pb-6 pt-10">
         <button type="button" onClick={async () => { if (await confirm('Sign out of SplitBuys?', 'Sign out')) signOut() }}

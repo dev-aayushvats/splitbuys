@@ -85,3 +85,15 @@ ss -tlnp                                   # only 22, 80, 443 public; 8080 on 12
   nginx and TLS.
 - **`EnvironmentFile` has no trailing comments.** Everything after `=` is the value.
 - **CORS in production** lists only real web origins (not `*`, not `localhost`).
+
+## Push notifications (optional)
+
+Off until the three `VAPID_*` settings exist in `application.env`.
+
+1. On your own machine: `java deploy/GenerateVapidKeys.java` prints a public key, a private key and a subject line.
+2. Put all three in `/var/opt/splitbuys-back/application.env` (mode 600; the private key is a secret; use a real contact in
+   `VAPID_SUBJECT`), then `systemctl restart myapp`.
+3. Deploy the web app (the service worker is part of it). People then turn notifications on from Profile.
+
+Changing the key pair later invalidates every subscription, and people must turn notifications on again. iPhones only get
+notifications from the Home Screen app (iOS 16.4 or later).

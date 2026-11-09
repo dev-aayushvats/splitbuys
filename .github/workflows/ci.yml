@@ -36,7 +36,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm, cache-dependency-path: web/package-lock.json }
       - run: npm ci
-      - run: npx tsc -b
+      - run: npm run typecheck
       - run: npm run lint
       # only what ships to users: the 6 findings in dev tooling (glob/minimatch via the PWA plugin's build step) never reach the bundle
       - run: npm audit --omit=dev --audit-level=high
