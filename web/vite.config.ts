@@ -9,6 +9,10 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
+      // our own worker (src/sw.ts): the generated one cannot show push notifications
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
       includeAssets: ['favicon.png', 'apple-touch-icon.png'],
       manifest: {
         name: 'SplitBuys',
@@ -25,7 +29,6 @@ export default defineConfig({
           { src: 'pwa-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
-      workbox: { navigateFallbackDenylist: [/^\/api/] },
     }),
   ],
 })
