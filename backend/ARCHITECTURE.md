@@ -135,6 +135,20 @@ naive "who paid for whom" tally because the plan routes debts through third peop
 is in are used, so nothing about a friend's other groups is visible. Two queries' worth of work: the caller's groups with
 members, then the four aggregate balance queries (the same ones the groups list uses).
 
+## Activity
+
+`GET /api/v1/me/activity` (`ledger.ActivityService`) is one newest-first feed of the expenses the caller paid for or has a share
+in, and the payments they made or received, across the groups they are in now (leaving a group takes its history out of the
+feed). Each item carries its group and, for expenses, `myNetPaise`: what it did to the caller's balance.
+
+Two tables feed one list, so keyset pagination needs a position that says which table the last row came from:
+`ActivityCursor` is `(time, type, id)`, ordered descending in that order. A page is built in three steps: take `limit + 1`
+`(id, time)` pairs from each table (that is enough, since the merged page can take at most `limit` from either, and the extra
+row says whether there is a next page), merge and keep `limit`, then load full rows for just those. Rows with the same time are
+ordered by type, so neither table repeats or skips a row at a page boundary; the cursor turns that into an id bound per table
+(everything, nothing, or "after this id"). `ActivityApiTest` forces identical timestamps to prove it, and a mutation of the
+bound makes it fail.
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.

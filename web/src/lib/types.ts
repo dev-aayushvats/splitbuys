@@ -10,6 +10,18 @@ export interface Friend { user: User; balancePaise: number; groups: FriendGroup[
 export interface GroupDetail { id: number; name: string; inviteToken: string; members: User[] }
 export interface InvitePreview { groupName: string; memberCount: number; alreadyMember: boolean; groupId: number | null }
 
+/** One line of the cross-group feed. `expense` or `payment` is set to match `type`; `myNetPaise` (expenses only) is what it did to the viewer's balance. */
+export interface ActivityItem {
+  type: 'EXPENSE' | 'PAYMENT'
+  id: number
+  groupId: number
+  groupName: string
+  createdAt: string
+  expense: Expense | null
+  payment: Settlement | null
+  myNetPaise: number | null
+}
+
 export type SplitType = 'EQUAL' | 'EXACT' | 'PERCENT' | 'SHARES'
 export interface Share { user: User; amountPaise: number }
 export interface Expense {

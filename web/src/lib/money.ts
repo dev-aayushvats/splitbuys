@@ -39,9 +39,8 @@ export function formatDate(iso: string): string {
 }
 
 /** "Today", "Yesterday", or e.g. "12 Oct" (with the year when it isn't this year). */
-export function dayLabel(iso: string): string {
+export function dayLabel(iso: string, now: Date = new Date()): string {
   const d = new Date(iso)
-  const now = new Date()
   const days = Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() -
     new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()) / 86_400_000)
   if (days === 0) return 'Today'

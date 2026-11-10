@@ -37,4 +37,19 @@ interface ExpenseRepository extends JpaRepository<Expense, Long> {
 
     @Query("select coalesce(sum(e.amountPaise), 0) from Expense e where e.group.id = :groupId")
     long totalSpent(long groupId);
+
+    // Activity: expenses the user paid for or has a share in, across the given groups, as (id, time) pairs so pages from
+    // expenses and payments can be merged before any full row is loaded.
+    @Query("select new com.splitbuys.backend.ledger.Stamp(e.id, e.createdAt) from Expense e where e.group.id in :groupIds "
+            + "and (e.payer.id = :userId or exists (select 1 from ExpenseShare s where s.expense = e and s.user.id = :userId)) "
+            + "order by e.createdAt desc, e.id desc")
+    List<Stamp> involvingFirst(Collection<Long> groupIds, long userId, Pageable page);
+
+    @Query("select new com.splitbuys.backend.ledger.Stamp(e.id, e.createdAt) from Expense e where e.group.id in :groupIds "
+            + "and (e.payer.id = :userId or exists (select 1 from ExpenseShare s where s.expense = e and s.user.id = :userId)) "
+            + "and (e.createdAt < :at or (e.createdAt = :at and e.id < :id)) order by e.createdAt desc, e.id desc")
+    List<Stamp> involvingAfter(Collection<Long> groupIds, long userId, Instant at, long id, Pageable page);
+
+    @EntityGraph(attributePaths = {"group", "payer", "createdBy", "shares", "shares.user"})
+    List<Expense> findForActivityByIdIn(Collection<Long> ids);
 }
