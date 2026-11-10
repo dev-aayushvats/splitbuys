@@ -27,7 +27,7 @@ export function AppShell() {
   const last = useRef({ path: pathname, tab, slide: '' })
   if (last.current.path !== pathname) {
     const from = last.current.tab
-    last.current = { path: pathname, tab, slide: from >= 0 && tab >= 0 ? (tab > from ? 'animate-slide-fwd' : 'animate-slide-back') : '' }
+    last.current = { path: pathname, tab, slide: from >= 0 && tab >= 0 ? (tab > from ? 'animate-tab-fwd' : 'animate-tab-back') : '' }
   }
   const slide = last.current.slide
 
