@@ -14,6 +14,9 @@ const PATHS = {
   arrow: 'M5 12h14M13 6l6 6-6 6',
   logout: 'M9 4H5a1 1 0 00-1 1v14a1 1 0 001 1h4M16 8l4 4-4 4M20 12H9',
   split: 'M6 4v6q0 4 4 4h8M6 20v-6M15 10l4 4-4 4',
+  friends: 'M9 11a4 4 0 100-8 4 4 0 000 8zM2 21a7 7 0 0114 0M17 4.5a3.5 3.5 0 010 7M19 14a7 7 0 013 7',
+  activity: 'M3 12h4l3-8 4 16 3-8h4',
+  user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',
 } as const
 
 export type IconName = keyof typeof PATHS

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { type IconName, Icon } from './icons'
 import { tap } from './feedback'
 import { RoundButton } from './controls'
@@ -132,5 +132,59 @@ export function PillTabs({ labels, index, onChange }: { labels: string[]; index:
         ))}
       </div>
     </div>
+  )
+}
+
+const MAIN_TABS = [
+  { to: '/', label: 'Groups', icon: 'groups' },
+  { to: '/friends', label: 'Friends', icon: 'friends' },
+  { to: '/activity', label: 'Activity', icon: 'activity' },
+  { to: '/profile', label: 'Profile', icon: 'user' },
+] as const satisfies readonly { to: string; label: string; icon: IconName }[]
+
+/** Which main tab a path belongs to (-1 on pages the bar is not shown on). */
+export function mainTabIndex(pathname: string): number {
+  return MAIN_TABS.findIndex((t) => (t.to === '/' ? pathname === '/' : pathname === t.to || pathname.startsWith(`${t.to}/`)))
+}
+
+/**
+ * The app's bottom bar: Groups, Friends, [Add], Activity, Profile in a frosted pill. Five equal slots, so the sliding
+ * highlight is a plain percentage and the Add button sits exactly in the middle. Tabs replace each other in history, so
+ * Back leaves the section instead of stepping through every tab visited.
+ */
+export function MainNav({ onAdd }: { onAdd: () => void }) {
+  const { pathname } = useLocation()
+  const nav = useNavigate()
+  const active = mainTabIndex(pathname)
+  // slots: 0 Groups, 1 Friends, 2 Add, 3 Activity, 4 Profile
+  const slot = (i: number) => (i < 2 ? i : i + 1)
+  const go = (to: string, i: number) => { if (i !== active) { tap(); nav(to, { replace: true }) } }
+  return (
+    <>
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#09090a] via-[#09090a]/80 to-transparent" />
+      <nav aria-label="Main" className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 w-[calc(100%-2rem)] max-w-[24rem] -translate-x-1/2 rounded-full p-1.5">
+        <div className="relative grid grid-cols-5">
+          {active >= 0 && (
+            <div aria-hidden className="absolute inset-y-0 w-1/5 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+              style={{ left: `${slot(active) * 20}%` }} />
+          )}
+          {MAIN_TABS.map((t, i) => (
+            <button type="button" key={t.to} aria-label={t.label} aria-current={i === active ? 'page' : undefined}
+              onClick={() => go(t.to, i)}
+              style={{ gridColumn: slot(i) + 1 }}
+              className={`relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-semibold transition-colors duration-200 ${i === active ? 'text-accent' : 'text-muted'}`}>
+              <Icon name={t.icon} size={21} />
+              {t.label}
+            </button>
+          ))}
+          <div className="col-start-3 row-start-1 grid place-items-center">
+            <button type="button" aria-label="Add" onClick={() => { tap(); onAdd() }}
+              className="btn-accent grid size-12 place-items-center rounded-full">
+              <Icon name="plus" size={26} />
+            </button>
+          </div>
+        </div>
+      </nav>
+    </>
   )
 }
