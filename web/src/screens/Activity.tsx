@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { activityView, groupByDay } from '../lib/activity'
 import { useActivity } from '../lib/queries'
-import { Dashed, EmptyState, ErrorRetry, IconBadge, Screen, Skeleton, Tile } from '../ui'
+import { Dashed, EmptyState, ErrorRetry, IconBadge, PageTitle, Screen, Skeleton, Tile } from '../ui'
 
 export function ActivityScreen() {
   const me = useAuth().user!
@@ -13,10 +13,7 @@ export function ActivityScreen() {
   return (
     <Screen className="pt-safe pb-safe" onRefresh={reload}>
       <div className="space-y-5 px-5 pb-32 pt-4">
-        <div>
-          <h1 className="text-2xl font-extrabold">Activity</h1>
-          <p className="mt-1 text-[13px] text-muted">Expenses and payments that involve you, across all your groups.</p>
-        </div>
+        <PageTitle title="Activity" subtitle="Expenses and payments that involve you, across all your groups." />
         {loading && !items ? <div className="space-y-3">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-[78px] rounded-[22px]" />)}</div>
           : error && !items ? <ErrorRetry error={error} onRetry={reload} />
           : items && items.length === 0 ? (

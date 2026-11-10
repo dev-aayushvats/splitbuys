@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useFriends } from '../lib/queries'
 import { formatPaise } from '../lib/money'
 import { label, type Friend } from '../lib/types'
-import { Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Icon, Screen, Skeleton, tap } from '../ui'
+import { Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Icon, PageTitle, Screen, Skeleton, tap } from '../ui'
 
 export function FriendsScreen() {
   const { data: friends, error, isPending: loading, refetch } = useFriends()
@@ -11,10 +11,7 @@ export function FriendsScreen() {
   return (
     <Screen className="pt-safe pb-safe" onRefresh={reload}>
       <div className="space-y-6 px-5 pb-32 pt-4">
-        <div>
-          <h1 className="text-2xl font-extrabold">Friends</h1>
-          <p className="mt-1 text-[13px] text-muted">People you share a group with, and what you owe each other across those groups.</p>
-        </div>
+        <PageTitle title="Friends" subtitle="People you share a group with, and what you owe each other across those groups." />
         {loading && !friends ? <div className="space-y-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-[78px] rounded-[22px]" />)}</div>
           : error && !friends ? <ErrorRetry error={error} onRetry={reload} />
           : friends && friends.length === 0 ? (
