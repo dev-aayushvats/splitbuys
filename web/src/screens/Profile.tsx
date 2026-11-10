@@ -44,7 +44,7 @@ export function ProfileScreen() {
 
   return (
     <Screen className="pb-safe">
-      <TopBar title="Profile" />
+      <TopBar title="Profile" showBack={false} />
       <div className="flex flex-col items-center px-5 pt-6">
         <Avatar user={me} size={88} />
         <div className="mt-4 text-2xl font-extrabold">{label(me)}</div>
@@ -82,7 +82,7 @@ export function ProfileScreen() {
 
       <NotificationsCard />
 
-      <div className="mt-auto px-5 pb-6 pt-10">
+      <div className="mt-auto px-5 pb-28 pt-10">
         <button type="button" onClick={async () => { if (await confirm('Sign out of SplitBuys?', 'Sign out')) signOut() }}
           className="glass-lite flex w-full items-center justify-center gap-2 rounded-full py-3.5 font-semibold text-neg">
           <Icon name="logout" size={18} /> Sign out

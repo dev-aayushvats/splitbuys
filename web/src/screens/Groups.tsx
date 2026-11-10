@@ -1,29 +1,21 @@
-import { useState, type FormEvent } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { useIdempotencyKey } from '../lib/idempotency'
-import { useRefreshGroups } from '../lib/mutations'
 import { useGroups } from '../lib/queries'
 import { formatPaise } from '../lib/money'
 import { headline, owedShare, summarize } from '../lib/overview'
 import { label, type GroupSummary } from '../lib/types'
+import { NewGroupSheet } from './NewGroup'
 import {
-  Avatar, BalanceText, Dashed, EmptyState, ErrorRetry, Field, Icon, IconBadge, RoundButton, Screen, SectionTitle,
-  Sheet, Skeleton, Tile, inputCls, tap, useFeedback,
+  BalanceText, Dashed, EmptyState, ErrorRetry, Icon, IconBadge, RoundButton, Screen, SectionTitle, Skeleton, Tile,
 } from '../ui'
 
 export function GroupsScreen() {
   const { user } = useAuth()
   const nav = useNavigate()
-  const { toast } = useFeedback()
   const { data: groups, error, isPending: loading, refetch } = useGroups()
   const reload = () => { void refetch() }
-  const refresh = useRefreshGroups()
   const [creating, setCreating] = useState(false)
-  const createKey = useIdempotencyKey()
-  const [menu, setMenu] = useState(false)
-  const [picking, setPicking] = useState(false)
   const me = user!
 
   return (
@@ -34,7 +26,6 @@ export function GroupsScreen() {
             <div className="text-[13px] text-muted">Welcome back</div>
             <div className="truncate text-2xl font-extrabold">{label(me)}</div>
           </div>
-          <button type="button" aria-label="Profile" onClick={() => nav('/profile')}><Avatar user={me} size={46} /></button>
         </div>
 
         <Overview groups={groups} />
@@ -62,49 +53,7 @@ export function GroupsScreen() {
         </section>
       </div>
 
-      {/* quick actions, reachable with the thumb */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(1.5rem+env(safe-area-inset-bottom))] z-30 mx-auto flex max-w-[480px] justify-end px-5">
-        <button type="button" aria-label="Add" onClick={() => { tap(); setMenu(true) }}
-          className="btn-accent animate-pop pointer-events-auto grid size-16 place-items-center rounded-full">
-          <Icon name="plus" size={32} />
-        </button>
-      </div>
-
-      <Sheet open={menu} onClose={() => setMenu(false)}>
-        <div className="space-y-3">
-          <button type="button" className="glass-btn flex w-full items-center gap-3 rounded-full px-5 py-3.5 font-semibold"
-            onClick={() => { setMenu(false); setCreating(true) }}>
-            <Icon name="groups" /> New group
-          </button>
-          <button type="button" className="glass-btn flex w-full items-center gap-3 rounded-full px-5 py-3.5 font-semibold disabled:opacity-45"
-            disabled={!groups?.length}
-            onClick={() => { setMenu(false); setPicking(true) }}>
-            <Icon name="receipt" /> Add expense
-          </button>
-        </div>
-      </Sheet>
-
-      <Sheet open={picking} onClose={() => setPicking(false)} title="Add expense to which group?">
-        <div className="max-h-[50dvh] space-y-3 overflow-y-auto">
-          {groups?.map((g) => (
-            <button key={g.id} type="button" className="glass-btn flex w-full items-center gap-3 rounded-full px-5 py-3.5 text-left font-semibold"
-              onClick={() => { setPicking(false); nav(`/groups/${g.id}/expense/new`) }}>
-              <Icon name="groups" /> <span className="min-w-0 flex-1 truncate">{g.name}</span>
-            </button>
-          ))}
-        </div>
-      </Sheet>
-
-      <NewGroupSheet open={creating} onClose={() => setCreating(false)} onCreate={async (name) => {
-        try {
-          const g = await api.createGroup(name, createKey.keyFor(name))
-          createKey.done()
-          setCreating(false)
-          void refresh()
-          nav(`/groups/${g.id}`)
-        } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
-      }} />
-
+      <NewGroupSheet open={creating} onClose={() => setCreating(false)} />
     </Screen>
   )
 }
@@ -154,28 +103,3 @@ function Side({ label, tone, value, groups }: { label: string; tone: string; val
     </div>
   )
 }
-
-function NewGroupSheet({ open, onClose, onCreate }: { open: boolean; onClose: () => void; onCreate: (name: string) => Promise<void> }) {
-  const [name, setName] = useState('')
-  const [busy, setBusy] = useState(false)
-  async function submit(e: FormEvent) {
-    e.preventDefault()
-    if (!name.trim()) return
-    setBusy(true)
-    await onCreate(name.trim())
-    setBusy(false)
-    setName('')
-  }
-  return (
-    <Sheet open={open} onClose={onClose} title="New group">
-      <form onSubmit={submit} className="space-y-4">
-        <Field label="Group name">
-          <input className={inputCls} autoFocus autoCapitalize="words" value={name} onChange={(e) => setName(e.target.value)} />
-        </Field>
-        <button type="submit" disabled={!name.trim() || busy}
-          className="btn-accent h-13 w-full rounded-full py-3.5 font-bold disabled:opacity-45">Create</button>
-      </form>
-    </Sheet>
-  )
-}
-

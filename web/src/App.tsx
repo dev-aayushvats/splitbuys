@@ -9,6 +9,9 @@ import { LoginScreen } from './screens/Login'
 import { NameScreen } from './screens/Name'
 import { ProfileScreen } from './screens/Profile'
 import { ExpenseFormScreen } from './screens/ExpenseForm'
+import { AppShell } from './screens/AppShell'
+import { FriendsScreen } from './screens/Friends'
+import { ActivityScreen } from './screens/Activity'
 
 /** Sign-in → name → app. Remembers where the user was headed via ?next=. */
 function Gate({ page }: { page: 'login' | 'name' | 'app' }) {
@@ -36,8 +39,12 @@ export function App() {
       <Route element={<Gate page="login" />}><Route path="/login" element={<LoginScreen />} /></Route>
       <Route element={<Gate page="name" />}><Route path="/name" element={<NameScreen />} /></Route>
       <Route element={<Gate page="app" />}>
-        <Route path="/" element={<GroupsScreen />} />
-        <Route path="/profile" element={<ProfileScreen />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<GroupsScreen />} />
+          <Route path="/friends" element={<FriendsScreen />} />
+          <Route path="/activity" element={<ActivityScreen />} />
+          <Route path="/profile" element={<ProfileScreen />} />
+        </Route>
         <Route path="/join/:token" element={<JoinScreen />} />
         <Route path="/groups/:id" element={<GroupScreen />} />
         <Route path="/groups/:id/expense/new" element={<ExpenseFormScreen />} />
