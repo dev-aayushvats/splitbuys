@@ -158,7 +158,8 @@ export function MainNav({ onAdd }: { onAdd: () => void }) {
   const active = mainTabIndex(pathname)
   // slots: 0 Groups, 1 Friends, 2 Add, 3 Activity, 4 Profile
   const slot = (i: number) => (i < 2 ? i : i + 1)
-  const go = (to: string, i: number) => { if (i !== active) { tap(); nav(to, { replace: true }) } }
+  // each tab starts at its top, so the large header is showing and the small one is not
+  const go = (to: string, i: number) => { if (i !== active) { tap(); nav(to, { replace: true }); window.scrollTo(0, 0) } }
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#09090a] via-[#09090a]/80 to-transparent" />
@@ -185,6 +186,72 @@ export function MainNav({ onAdd }: { onAdd: () => void }) {
           </div>
         </div>
       </nav>
+    </>
+  )
+}
+
+/** 0 at the top of the page to 1 once `range` pixels have scrolled by (the pull-down bounce on iOS counts as 0). */
+export const scrollProgress = (y: number, range: number) => Math.min(1, Math.max(0, y / range))
+
+/** Page scroll as 0..1. Only the component that calls it re-renders while scrolling, and not at all once past the range. */
+export function useScrollProgress(range = 56) {
+  const [p, setP] = useState(() => scrollProgress(window.scrollY, range))
+  useEffect(() => {
+    let frame = 0
+    const update = () => { frame = 0; setP(scrollProgress(window.scrollY, range)) }
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); if (frame) cancelAnimationFrame(frame) }
+  }, [range])
+  return p
+}
+
+/**
+ * The small version of a page header that settles at the top left once the large one has scrolled away, over a fade so
+ * content dissolves into the page as it passes under. Invisible (and not interactive) at the top of the page.
+ */
+function StickyBar({ progress, children }: { progress: number; children: ReactNode }) {
+  return (
+    <>
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#17181b]/95 via-[#17181b]/60 to-transparent"
+        style={{ opacity: progress }} />
+      <div aria-hidden={progress < 0.5} className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top)] z-30 mx-auto flex h-14 max-w-[480px] items-center gap-2.5 px-5"
+        style={{ opacity: progress, transform: `translateY(${(1 - progress) * 8}px)` }}>
+        {children}
+      </div>
+    </>
+  )
+}
+
+/** Large page title that turns into a small sticky one at the top left as the page scrolls. */
+export function PageTitle({ title, subtitle }: { title: string; subtitle?: string }) {
+  const p = useScrollProgress(56)
+  return (
+    <>
+      <div style={{ opacity: 1 - p }}>
+        <h1 className="text-[28px] font-extrabold leading-tight">{title}</h1>
+        {subtitle && <p className="mt-1 text-[13px] text-muted">{subtitle}</p>}
+      </div>
+      <StickyBar progress={p}><span className="truncate text-[17px] font-bold">{title}</span></StickyBar>
+    </>
+  )
+}
+
+/** Large avatar and name that collapse into a small avatar and name, sticky at the top left. */
+export function ProfileHeader({ avatar, smallAvatar, name, detail }: { avatar: ReactNode; smallAvatar: ReactNode; name: string; detail?: string }) {
+  const p = useScrollProgress(110)
+  return (
+    <>
+      <div className="flex flex-col items-center text-center" style={{ opacity: 1 - p }}>
+        {avatar}
+        <div className="mt-4 text-2xl font-extrabold">{name}</div>
+        {detail && <div className="mt-1 text-sm text-muted">{detail}</div>}
+      </div>
+      <StickyBar progress={p}>
+        {smallAvatar}
+        <span className="min-w-0 truncate text-[17px] font-bold">{name}</span>
+      </StickyBar>
     </>
   )
 }

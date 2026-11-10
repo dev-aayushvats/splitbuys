@@ -4,7 +4,7 @@ import { label } from '../lib/types'
 import { isValidUpi, normalizeUpi } from '../lib/upi'
 import { DeleteAccountSheet } from './DeleteAccount'
 import { NotificationsCard } from './Notifications'
-import { Avatar, Field, Icon, Screen, TopBar, inputCls, useFeedback } from '../ui'
+import { Avatar, Field, Icon, ProfileHeader, Screen, inputCls, useFeedback } from '../ui'
 
 export function ProfileScreen() {
   const { user, setName, setUpi, clearUpi, signOut } = useAuth()
@@ -43,12 +43,9 @@ export function ProfileScreen() {
   }
 
   return (
-    <Screen className="pb-safe">
-      <TopBar title="Profile" showBack={false} />
-      <div className="flex flex-col items-center px-5 pt-6">
-        <Avatar user={me} size={88} />
-        <div className="mt-4 text-2xl font-extrabold">{label(me)}</div>
-        <div className="mt-1 text-sm text-muted">{me.email}</div>
+    <Screen className="pt-safe pb-safe">
+      <div className="px-5 pt-6">
+        <ProfileHeader avatar={<Avatar user={me} size={88} />} smallAvatar={<Avatar user={me} size={32} />} name={label(me)} detail={me.email} />
       </div>
 
       <form onSubmit={save} className="mt-8 space-y-4 px-5">
