@@ -22,6 +22,10 @@
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   --animate-slide-fwd: slide-fwd 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-slide-back: slide-back 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  /* the slide between main tabs: `backwards`, not `both`. Holding the last frame (transform: none) would keep the page a
+     containing block for position: fixed, and the sticky page headers would scroll away with it instead of staying put */
+  --animate-tab-fwd: slide-fwd 0.34s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  --animate-tab-back: slide-back 0.34s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   --animate-sheet-out: sheet-out 0.22s cubic-bezier(0.4, 0, 1, 1) both;
   --animate-fade-out: fade-out 0.22s ease-in both;
   @keyframes fade { from { opacity: 0 } to { opacity: 1 } }
