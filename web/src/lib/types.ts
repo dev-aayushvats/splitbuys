@@ -4,6 +4,9 @@ export interface Profile extends User { upiId: string | null }
 export const label = (u: User) => (u.name ? u.name : u.email)
 
 export interface GroupSummary { id: number; name: string; memberCount: number; myBalancePaise: number }
+/** Positive: they owe the viewer. Negative: the viewer owes them. */
+export interface FriendGroup { id: number; name: string; balancePaise: number }
+export interface Friend { user: User; balancePaise: number; groups: FriendGroup[] }
 export interface GroupDetail { id: number; name: string; inviteToken: string; members: User[] }
 export interface InvitePreview { groupName: string; memberCount: number; alreadyMember: boolean; groupId: number | null }
 

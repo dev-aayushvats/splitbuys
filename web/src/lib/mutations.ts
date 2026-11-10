@@ -29,7 +29,12 @@ function useGroupWrite<V>(gid: number, write: (v: V) => Promise<unknown>, optimi
       if (ctx?.previous) qc.setQueryData(key, ctx.previous)
       toast(e instanceof Error ? e.message : 'Something went wrong')
     },
-    onSettled: () => Promise.all([qc.invalidateQueries({ queryKey: key }), qc.invalidateQueries({ queryKey: keys.groups(uid) })]),
+    // friends' balances are sums over groups, so they go stale whenever a group's money or membership changes
+    onSettled: () => Promise.all([
+      qc.invalidateQueries({ queryKey: key }),
+      qc.invalidateQueries({ queryKey: keys.groups(uid) }),
+      qc.invalidateQueries({ queryKey: keys.friends(uid) }),
+    ]),
   })
 }
 
@@ -53,6 +58,7 @@ export function useRefreshGroups() {
     if (gid !== undefined && opts?.forget) qc.removeQueries({ queryKey: keys.group(uid, gid) })
     return Promise.all([
       qc.invalidateQueries({ queryKey: keys.groups(uid) }),
+      qc.invalidateQueries({ queryKey: keys.friends(uid) }),
       gid === undefined || opts?.forget ? undefined : qc.invalidateQueries({ queryKey: keys.group(uid, gid) }),
     ])
   }

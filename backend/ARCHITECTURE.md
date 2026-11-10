@@ -125,6 +125,16 @@ Opt-in, per device. A browser subscribes with the server's public VAPID key and 
 - **Not done.** Edits and deletions do not notify; there is no per-group mute; one malicious member could spam others (messages
   collapse per group on the device, but the server does not rate limit them).
 
+## Friends
+
+`GET /api/v1/me/friends` lists everyone who shares at least one group with the caller (`group.FriendService`), each with a
+balance and the shared groups behind it (positive: they owe the caller). Balances here are per person per group, not per pair,
+so the pairwise figure is taken from the settle-up plan: in each shared group, the payment the plan asks for between the two.
+That is what they would really pay each other, it matches the Balances tab, and it adds up across groups; it can differ from a
+naive "who paid for whom" tally because the plan routes debts through third people to need fewer payments. Only groups the caller
+is in are used, so nothing about a friend's other groups is visible. Two queries' worth of work: the caller's groups with
+members, then the four aggregate balance queries (the same ones the groups list uses).
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.
