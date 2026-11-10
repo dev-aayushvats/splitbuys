@@ -70,4 +70,14 @@ describe('optimistic delete', () => {
     expect(cached().expenses).toHaveLength(1)
     expect(cached().balances.totalSpentPaise).toBe(1000)
   })
+
+  it('marks the friends list stale, since their balances are sums over groups', async () => {
+    deleteExpense.mockResolvedValue(undefined)
+    qc.setQueryData(keys.friends(1), [])
+    expect(qc.getQueryState(keys.friends(1))?.isInvalidated).toBe(false)
+    act(() => mutate(10))
+    await tick()
+    await tick()
+    expect(qc.getQueryState(keys.friends(1))?.isInvalidated).toBe(true)
+  })
 })
