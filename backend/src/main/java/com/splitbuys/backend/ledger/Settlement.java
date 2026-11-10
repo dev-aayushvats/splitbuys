@@ -44,6 +44,10 @@ class Settlement {
         this.createdBy = createdBy;
     }
 
+    ExpenseGroup getGroup() {
+        return group;
+    }
+
     Long getId() {
         return id;
     }

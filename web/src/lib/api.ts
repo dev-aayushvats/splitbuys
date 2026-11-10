@@ -1,5 +1,5 @@
 import type {
-  Balances, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Profile, Settlement,
+  ActivityItem, Balances, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, InvitePreview, Page, Profile, Settlement,
 } from './types'
 import { fetchWithRetry, IDEMPOTENCY_HEADER, parseBody, RequestTimeoutError } from './http'
 
@@ -72,6 +72,8 @@ export const api = {
   subscribePush: (sub: { endpoint: string; keys: { p256dh: string; auth: string } }) => send<void>('POST', '/push/subscriptions', sub),
   unsubscribePush: (endpoint: string) => send<void>('DELETE', '/push/subscriptions', { endpoint }),
 
+  activity: (cursor?: string | null) =>
+    send<Page<ActivityItem>>('GET', `/me/activity?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
   friends: () => send<Friend[]>('GET', '/me/friends'),
   groups: () => send<GroupSummary[]>('GET', '/groups'),
   createGroup: (name: string, key: string) => send<GroupDetail>('POST', '/groups', { name }, key),

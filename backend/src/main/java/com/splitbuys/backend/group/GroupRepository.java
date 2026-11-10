@@ -14,4 +14,7 @@ interface GroupRepository extends JpaRepository<ExpenseGroup, Long> {
     @Query("select g from ExpenseGroup g where g.id in "
             + "(select g2.id from ExpenseGroup g2 join g2.members m where m.id = :userId) order by g.createdAt desc")
     List<ExpenseGroup> findAllForMember(long userId);
+
+    @Query("select g.id from ExpenseGroup g join g.members m where m.id = :userId")
+    List<Long> findIdsForMember(long userId);
 }

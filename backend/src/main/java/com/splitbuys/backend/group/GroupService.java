@@ -54,6 +54,12 @@ public class GroupService {
         return GroupDetail.from(groups.save(new ExpenseGroup(name, newToken(), creator)));
     }
 
+    /** Ids of the groups the user is in now: the scope of anything that reads across groups. */
+    @Transactional(readOnly = true)
+    public List<Long> groupIdsOf(long userId) {
+        return groups.findIdsForMember(userId);
+    }
+
     @Transactional(readOnly = true)
     public List<GroupSummary> list(long userId) {
         List<ExpenseGroup> mine = groups.findAllForMember(userId);
