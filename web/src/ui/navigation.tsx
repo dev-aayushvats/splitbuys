@@ -135,7 +135,7 @@ export function PillTabs({ labels, index, onChange }: { labels: string[]; index:
   )
 }
 
-const MAIN_TABS = [
+export const MAIN_TABS = [
   { to: '/', label: 'Groups', icon: 'groups' },
   { to: '/friends', label: 'Friends', icon: 'friends' },
   { to: '/activity', label: 'Activity', icon: 'activity' },
@@ -148,18 +148,30 @@ export function mainTabIndex(pathname: string): number {
 }
 
 /**
+ * Switch to main tab `i`. Tabs replace each other in history, so Back leaves the section instead of stepping through every
+ * tab visited; and each starts at its top, so the large header is showing and the small one is not.
+ */
+export function useGoToTab() {
+  const nav = useNavigate()
+  return useCallback((i: number) => {
+    tap()
+    nav(MAIN_TABS[i].to, { replace: true })
+    window.scrollTo(0, 0)
+  }, [nav])
+}
+
+/**
  * The app's bottom bar: Groups, Friends, [Add], Activity, Profile in a frosted pill. Five equal slots, so the sliding
  * highlight is a plain percentage and the Add button sits exactly in the middle. Tabs replace each other in history, so
  * Back leaves the section instead of stepping through every tab visited.
  */
 export function MainNav({ onAdd }: { onAdd: () => void }) {
   const { pathname } = useLocation()
-  const nav = useNavigate()
   const active = mainTabIndex(pathname)
   // slots: 0 Groups, 1 Friends, 2 Add, 3 Activity, 4 Profile
   const slot = (i: number) => (i < 2 ? i : i + 1)
-  // each tab starts at its top, so the large header is showing and the small one is not
-  const go = (to: string, i: number) => { if (i !== active) { tap(); nav(to, { replace: true }); window.scrollTo(0, 0) } }
+  const goTo = useGoToTab()
+  const go = (i: number) => { if (i !== active) goTo(i) }
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#09090a] via-[#09090a]/80 to-transparent" />
@@ -171,7 +183,7 @@ export function MainNav({ onAdd }: { onAdd: () => void }) {
           )}
           {MAIN_TABS.map((t, i) => (
             <button type="button" key={t.to} aria-label={t.label} aria-current={i === active ? 'page' : undefined}
-              onClick={() => go(t.to, i)}
+              onClick={() => go(i)}
               style={{ gridColumn: slot(i) + 1 }}
               className={`relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-semibold transition-colors duration-200 ${i === active ? 'text-accent' : 'text-muted'}`}>
               <Icon name={t.icon} size={21} />

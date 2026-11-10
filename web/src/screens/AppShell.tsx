@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useGroups } from '../lib/queries'
-import { Icon, MainNav, Sheet, mainTabIndex } from '../ui'
+import { Icon, MAIN_TABS, MainNav, Sheet, mainTabIndex, useGoToTab } from '../ui'
+import { useSwipeTabs } from '../ui/swipeTabs'
 import { NewGroupSheet } from './NewGroup'
 
 /**
@@ -17,9 +18,22 @@ export function AppShell() {
   const [creating, setCreating] = useState(false)
   const [picking, setPicking] = useState(false)
 
+  // Moving between tabs (tapping the bar or swiping) slides the new page in from the side it sits on. Coming back from a
+  // group, or opening the app, keeps the plain fade: only a move from one tab to another slides.
+  const tab = mainTabIndex(pathname)
+  const goTo = useGoToTab()
+  useSwipeTabs(tab, MAIN_TABS.length, goTo)
+  // decided once per navigation, so a re-render during the 0.34s slide cannot cut it short
+  const last = useRef({ path: pathname, tab, slide: '' })
+  if (last.current.path !== pathname) {
+    const from = last.current.tab
+    last.current = { path: pathname, tab, slide: from >= 0 && tab >= 0 ? (tab > from ? 'animate-slide-fwd' : 'animate-slide-back') : '' }
+  }
+  const slide = last.current.slide
+
   return (
     <>
-      <Outlet />
+      <div key={pathname} className={slide}><Outlet /></div>
       {mainTabIndex(pathname) >= 0 && <MainNav onAdd={() => setMenu(true)} />}
 
       <Sheet open={menu} onClose={() => setMenu(false)}>
