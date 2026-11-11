@@ -111,5 +111,5 @@ JIT off (`PG_JIT=off ./run-feeds.sh`, one run on a quiet machine, 0 failed reque
 The knee moves from about 75-100 to above 100 visits/s. Friends is unchanged (its cost is the balances scan, not JIT).
 Caveats: one run each, the JIT-on run was in an earlier session, and the load-test machine is a laptop; treat the size of the gap
 as indicative, but a 25x difference at 100 visits/s is well outside noise. Suggested change: `ALTER ROLE <app role> SET jit = off`
-(survives restarts, no deploy; session-level `SET` can be lost behind Neon's pooler). Not yet applied.
+(survives restarts, no deploy; session-level `SET` can be lost behind Neon's pooler). Applied on 2026-11-12 with `ALTER ROLE` for the app's role on Neon (a fresh connection reports `jit = off`); connections already in the pool pick it up when they are recycled. Undo with `ALTER ROLE <role> RESET jit`.
 - Not measured: a network hop to the database, more than 10 heavy users, caching or materialised balances.
