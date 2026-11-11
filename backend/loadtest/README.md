@@ -64,3 +64,37 @@ Two separate runs on a laptop, so small differences are noise, but a 10x gap in 
   `GET /expenses` was unpaginated, so per-request cost grew with data. Pagination fixed most of that (see above).
 - Not measured: a network between app and database (Neon is remote, so real latencies are higher), the OTP/auth
   endpoints, and long soak tests.
+
+## Friends and Activity (`./run-feeds.sh`)
+
+`seed-heavy.sql` adds 10 heavy users (50 groups, ~209 friends, ~10,000 expenses each) to the standard seed. `feeds.js` mixes
+90% typical / 10% heavy visits (friends + activity + next page); steps are visits/s (default 25,50,75,100,150 via compose).
+Same caps as above: 1 vCPU each for backend and Postgres, k6 in the same 4-CPU Docker VM. `./summarize.py` builds the tables.
+
+Valid run (Postgres JIT on, the default), 0 failed requests:
+
+| One request at a time | median | p95 |
+|---|---|---|
+| typical friends / activity | 7.0 / 7.6 ms | 52 / 51 ms |
+| heavy friends | 49.6 ms | 63 ms |
+| heavy activity (first / next page) | 29.6 / 23.5 ms | 104 / 107 ms |
+| heavy feed, pages 101+ | 15.4 ms | 28 ms |
+
+| Under load (visits/s) | typical p95 | heavy p95 |
+|---|---|---|
+| 25 | 15 ms | 234 ms |
+| 50 | 41 ms | 333 ms |
+| 75 | 76 ms | 645 ms |
+| 100 | 944 ms | 1.9 s |
+| 150 | 10.3 s (collapsed, 1,528 dropped) | 10.7 s |
+
+The knee is roughly 75-100 visits/s (about 225-300 requests/s) on 1 vCPU each.
+
+What it showed:
+- Typical users are negligible. Heavy users cost ~50 ms (Friends, the balances scan) and ~30 ms (Activity first page).
+- Deep pages are cheap; the first page scales with the user's total history (`explain-jit-on.txt`: 10,000 rows read to return 31).
+- Postgres JIT compiled that heavy query for ~69 ms of its 267 ms, because its estimated cost (265k) exceeded `jit_above_cost`
+  (100k). Suggested: `jit = off` for the app's connection. **Not measured under load**: two JIT-off reruns were invalid
+  (latencies longer than the run, empty steps) because the laptop was overloaded (load average ~23). Rerun on a quiet machine
+  (`PG_JIT=off ./run-feeds.sh`) before claiming a saving. Check `SHOW jit;` on Neon too.
+- Not measured: a network hop to the database, more than 10 heavy users, caching or materialised balances.

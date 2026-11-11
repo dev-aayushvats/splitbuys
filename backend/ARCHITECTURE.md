@@ -149,6 +149,10 @@ ordered by type, so neither table repeats or skips a row at a page boundary; the
 (everything, nothing, or "after this id"). `ActivityApiTest` forces identical timestamps to prove it, and a mutation of the
 bound makes it fail.
 
+Measured cost (`loadtest/README.md`, one laptop VM): a deep page is cheap, but the *first* page still scales with the user's total
+history, because the plan reads all of the caller's expenses before taking `limit + 1`. A user in 50 groups with 10k expenses
+pays about 30 ms for it; a typical user pays about 7 ms. Friends costs about 50 ms for that heavy user (the balances scan).
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.
