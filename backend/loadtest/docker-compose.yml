@@ -7,6 +7,8 @@ services:
   db:
     image: postgres:16-alpine
     environment: { POSTGRES_DB: splitbuys, POSTGRES_USER: splitbuys, POSTGRES_PASSWORD: loadtest }
+    # PG_JIT=off runs the same test with Postgres JIT compilation disabled (it is on by default)
+    command: ["postgres", "-c", "jit=${PG_JIT:-on}"]
     cpus: 1
     mem_limit: 1g
     healthcheck:
@@ -36,5 +38,5 @@ services:
       BASE_URL: http://backend:8080
       JWT_SECRET: loadtest-secret-loadtest-secret-loadtest-secret
       RATES: ${RATES:-25,50,75,100,150}
-    volumes: ["./loadtest.js:/loadtest.js:ro", "./results:/results"]
+    volumes: ["./loadtest.js:/loadtest.js:ro", "./feeds.js:/feeds.js:ro", "./results:/results"]
     command: ["run", "--summary-export=/results/summary.json", "/loadtest.js"]
