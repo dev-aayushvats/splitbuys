@@ -48,6 +48,28 @@ SSH_TARGET=root@your.host SSH_KEY=~/.ssh/your_key API_URL=https://api.<your doma
 - A migration runs when the new jar starts (Flyway). Migrations here are additive, so rolling the jar back is safe; it is not a
   database rollback. Take a backup first when a release adds one: `POST /api/v1/admin/backups` (see `backend/ARCHITECTURE.md`).
 
+## Deploying from GitHub Actions
+
+`.github/workflows/deploy-backend.yml` runs `deploy.sh` when a code change under `backend/` reaches `main` (markdown and
+`backend/loadtest/` are ignored), or by hand from the Actions tab. It uses the same script, so the build, tests, checksum,
+health check and automatic rollback are identical to a manual deploy, and the script still refuses to ship anything that is not
+exactly `origin/main`.
+
+One-time setup (nothing here is done by the workflow itself):
+
+1. **A dedicated key.** `ssh-keygen -t ed25519 -f deploy_key -N '' -C github-actions-deploy`. Add the public half to the
+   droplet's `~/.ssh/authorized_keys` prefixed with `no-port-forwarding,no-agent-forwarding,no-pty,no-X11-forwarding ` so it can
+   only run commands. Keep it separate from your own key so it can be revoked on its own. (The deploy needs root to restart the
+   service, so this key is root-equivalent: treat the secret accordingly.)
+2. **Repository secrets** (Settings, Secrets and variables, Actions), ideally as *environment* secrets of `production`:
+   `DEPLOY_SSH_KEY` (the private half), `DEPLOY_SSH_TARGET` (`root@68.183.84.234`), `DEPLOY_KNOWN_HOSTS` (output of
+   `ssh-keyscan -t ed25519 68.183.84.234`, checked against the host's real fingerprint, so the runner cannot be sent to an impostor).
+3. **Environment.** Settings, Environments, create `production`, add yourself as a required reviewer, and limit it to the `main`
+   branch. Every deploy then waits for a click.
+
+Concurrent runs queue (never cancel), because cancelling mid-swap is the one dangerous moment. Rotate the key by replacing the
+`authorized_keys` line and the secret.
+
 ## The web app on Cloudflare
 Cloudflare builds the `web/` folder from git. `web/public/_headers` ships into the build and sets the security headers, the
 cache rules and a strict Content-Security-Policy. Two things must stay in step:
