@@ -1,0 +1,51 @@
+name: Deploy backend
+
+# Runs when a code change under backend/ reaches main (docs and the load-test rig do not count), or by hand.
+# The job sits in the "production" environment: with required reviewers set there, nothing deploys until someone approves.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - 'deploy/deploy.sh'
+      - '.github/workflows/deploy-backend.yml'
+      - '!backend/**/*.md'
+      - '!backend/loadtest/**'
+  workflow_dispatch:
+
+# one deploy at a time, and never cancel one that is mid-swap
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17, cache: maven }
+      - name: Set up SSH
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/deploy_key ~/.ssh/known_hosts
+      # deploy.sh itself refuses unless this checkout is exactly origin/main, so if main has moved on since the push
+      # that started this run, it stops instead of shipping old code. It also builds, tests, checksums, health-checks
+      # and rolls back by itself.
+      - name: Deploy
+        env:
+          SSH_TARGET: ${{ secrets.DEPLOY_SSH_TARGET }}
+          API_URL: https://api.splitbuys.aayushvats.com
+        run: |
+          export SSH_KEY="$HOME/.ssh/deploy_key"
+          deploy/deploy.sh
