@@ -1,6 +1,7 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { useAuth } from './auth'
+import { NO_FILTER, normalizedText, type SearchFilter } from './searchFilter'
 
 // Keys start with the user's id, so one person's cached data can never be shown to another, even if a sign-out were missed.
 export const keys = {
@@ -53,12 +54,27 @@ export function useFriends() {
 }
 
 /** The cross-group feed, a page at a time (older pages on request). Not kept on disk: it is long, and always fresher online. */
-export function useActivity() {
+export function useActivity(filter: SearchFilter = NO_FILTER) {
   const uid = useAuth().user!.id
   return useInfiniteQuery({
-    queryKey: keys.activity(uid),
-    queryFn: ({ pageParam }) => api.activity(pageParam),
+    // the filter is part of the key (after the user's activity prefix): every search is its own cached list, and a write that invalidates the prefix refreshes them all
+    queryKey: [...keys.activity(uid), normalizedText(filter), filter.category] as const,
+    queryFn: ({ pageParam }) => api.activity(pageParam, filter),
+    placeholderData: keepPreviousData,
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,
+  })
+}
+
+/** The expenses of one group that match a search, a page at a time. Only runs while the user is actually searching. */
+export function useExpenseSearch(gid: number, filter: SearchFilter, enabled: boolean) {
+  const uid = useAuth().user!.id
+  return useInfiniteQuery({
+    queryKey: [...keys.group(uid, gid), 'search', normalizedText(filter), filter.category] as const,
+    queryFn: ({ pageParam }) => api.expenses(gid, pageParam, filter),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
+    placeholderData: keepPreviousData,
+    enabled,
   })
 }

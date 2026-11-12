@@ -8,7 +8,9 @@ import { outbox, type Queued } from '../../lib/outbox'
 import { useQueuedExpenses } from '../../lib/useOutbox'
 import { mergeTimeline } from '../../lib/timeline'
 import { label, type Expense, type GroupData, type Settlement, type User } from '../../lib/types'
-import { Avatar, EmptyState, IconBadge, Sheet, Tile, useFeedback } from '../../ui'
+import { isFiltering, NO_FILTER } from '../../lib/searchFilter'
+import { useExpenseSearch } from '../../lib/queries'
+import { Avatar, EmptyState, IconBadge, Sheet, SearchBar, Tile, useDebounced, useFeedback } from '../../ui'
 import { HistorySheet } from './HistorySheet'
 import { who } from './shared'
 
@@ -50,9 +52,18 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
     setLoadingMore(false)
   }
 
-  const items = mergeTimeline(expenses, eCursor !== null, settlements, sCursor !== null)
-    .map((i) => ({ at: i.at, node: i.kind === 'expense' ? expenseTile(i.item) : settlementTile(i.item) }))
-  const hasMore = eCursor !== null || sCursor !== null
+  // Searching asks the server for matching expenses (payments have no name or category, so they are left out) and replaces the timeline.
+  const [filter, setFilter] = useState(NO_FILTER)
+  const searching = isFiltering(filter)
+  const sent = useDebounced(filter)
+  const search = useExpenseSearch(gid, sent, isFiltering(sent))
+  const found = isFiltering(sent) ? search.data?.pages.flatMap((p) => p.items) : undefined
+
+  const items = found
+    ? found.map((e) => ({ at: e.createdAt, node: expenseTile(e) }))
+    : mergeTimeline(expenses, eCursor !== null, settlements, sCursor !== null)
+      .map((i) => ({ at: i.at, node: i.kind === 'expense' ? expenseTile(i.item) : settlementTile(i.item) }))
+  const hasMore = found ? !!search.hasNextPage : eCursor !== null || sCursor !== null
 
   function expenseTile(e: GroupData['expenses'][number]) {
     const myShare = e.shares.filter((s) => s.user.id === me.id).reduce((a, s) => a + s.amountPaise, 0)
@@ -100,7 +111,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
     )
   }
 
-  if (items.length === 0 && !hasMore && queued.length === 0) {
+  if (items.length === 0 && !hasMore && queued.length === 0 && !searching) {
     return <EmptyState icon="receipt" title="No expenses yet">Tap the + button to add the first one.</EmptyState>
   }
   const days: { day: string; nodes: React.ReactNode[] }[] = []
@@ -120,27 +131,30 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
           deleteExpense.mutate(e.id, { onSuccess: () => offerUndo(gid, e.id, 'DELETED') })
         }} />
       <HistorySheet gid={gid} me={me} open={showHistory} onClose={() => setShowHistory(false)} />
-      {queued.length > 0 && (
+      <SearchBar value={filter} onChange={setFilter} placeholder="Search expenses" />
+      {searching && !found && <div className="py-6 text-center text-[13px] text-muted">Searching…</div>}
+      {found && items.length === 0 && <EmptyState icon="search" title="No matches">No expense in this group matches that.</EmptyState>}
+      {!searching && queued.length > 0 && (
         <section>
           <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">Waiting to sync</h3>
           <div className="space-y-3">{queued.map((q) => queuedTile(q))}</div>
         </section>
       )}
       {days.map((d) => (
-        <section key={d.day}>
+        <section key={d.day} className={search.isPlaceholderData ? 'opacity-60 transition-opacity' : 'transition-opacity'}>
           <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{d.day}</h3>
           <div className="stagger space-y-3">{d.nodes}</div>
         </section>
       ))}
       {hasMore && (
-        <button type="button" onClick={loadMore} disabled={loadingMore}
+        <button type="button" onClick={found ? () => { void search.fetchNextPage() } : loadMore} disabled={found ? search.isFetchingNextPage : loadingMore}
           className="glass-lite w-full rounded-full py-3.5 font-semibold disabled:opacity-60">
-          {loadingMore ? 'Loading…' : 'Load older'}
+          {(found ? search.isFetchingNextPage : loadingMore) ? 'Loading…' : 'Load older'}
         </button>
       )}
-      <button type="button" onClick={() => setShowHistory(true)} className="w-full py-2 text-[13px] font-semibold text-muted">
+      {!searching && <button type="button" onClick={() => setShowHistory(true)} className="w-full py-2 text-[13px] font-semibold text-muted">
         Recent changes and undo
-      </button>
+      </button>}
     </div>
   )
 }

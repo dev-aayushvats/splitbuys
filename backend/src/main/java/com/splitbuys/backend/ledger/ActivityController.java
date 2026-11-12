@@ -20,7 +20,9 @@ class ActivityController {
     @GetMapping("/activity")
     PageResponse<ActivityItem> activity(@CurrentUser long userId,
                                         @RequestParam(defaultValue = "" + PageCursor.DEFAULT_LIMIT) int limit,
-                                        @RequestParam(required = false) String cursor) {
-        return activity.list(userId, limit, cursor);
+                                        @RequestParam(required = false) String cursor,
+                                        @RequestParam(required = false, name = "q") String text,
+                                        @RequestParam(required = false) ExpenseCategory category) {
+        return activity.list(userId, limit, cursor, text, category);
     }
 }

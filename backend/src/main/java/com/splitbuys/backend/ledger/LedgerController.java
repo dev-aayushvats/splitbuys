@@ -37,8 +37,10 @@ class LedgerController {
     @GetMapping("/expenses")
     PageResponse<ExpenseDto> expenses(@CurrentUser long userId, @PathVariable long groupId,
                                       @RequestParam(defaultValue = "" + PageCursor.DEFAULT_LIMIT) int limit,
-                                      @RequestParam(required = false) String cursor) {
-        return ledger.listExpenses(groupId, userId, limit, cursor);
+                                      @RequestParam(required = false) String cursor,
+                                      @RequestParam(required = false, name = "q") String text,
+                                      @RequestParam(required = false) ExpenseCategory category) {
+        return ledger.listExpenses(groupId, userId, limit, cursor, text, category);
     }
 
     @GetMapping("/expenses/{expenseId}")
