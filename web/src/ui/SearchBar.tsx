@@ -25,9 +25,9 @@ export function SearchBar({ value, onChange, placeholder }: { value: SearchFilte
         )}
       </div>
       {showChips && (
-        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" onMouseDown={(e) => e.preventDefault()}>
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
           {CATEGORIES.map((c) => (
-            <button key={c.id} type="button" aria-pressed={value.category === c.id}
+            <button key={c.id} type="button" aria-pressed={value.category === c.id} onMouseDown={(e) => e.preventDefault()}
               onClick={() => { tap(); onChange({ ...value, category: value.category === c.id ? null : c.id }) }}
               className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold ring-1 ring-white/10 ${value.category === c.id ? 'btn-accent' : 'glass-btn'}`}>
               {c.emoji} {c.label}
