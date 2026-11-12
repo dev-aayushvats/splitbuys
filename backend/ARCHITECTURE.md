@@ -50,6 +50,9 @@ and Tomcat (`server.forward-headers-strategy=native`) reads that header from the
 it from the left would let a client spoof its identity and bypass the limiter; `ClientAddressApiTest` runs a real server to
 prove it cannot.
 With `SPRING_PROFILES_ACTIVE=prod` the app refuses to start unless real email is enabled and CORS is not `*`.
+The sign-in email (`auth.OtpEmail`) is multipart: a plain-text body and a small HTML one (one table, inline styles, a dark-mode
+override, no images or remote resources), with the code leading the subject so a notification shows it. The text part is always
+sent, so a client that shows only text still gets the code.
 
 ## Data
 

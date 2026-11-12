@@ -1,13 +1,15 @@
 package com.splitbuys.backend.auth;
 
 import com.splitbuys.backend.common.error.DependencyFailureException;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.mail.MailException;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 /** Sends OTPs over SMTP (Gmail by default). Enabled with MAIL_ENABLED=true. */
@@ -35,12 +37,18 @@ class SmtpEmailSender implements EmailSender {
 
     @Override
     public void sendOtp(String email, String code) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(from);
-        message.setTo(email);
-        message.setSubject("Your SplitBuys code: " + code);
-        message.setText("Your SplitBuys sign-in code is " + code + ".\n\nIt expires in " + ttlMinutes
-                + " minutes. If you didn't ask for it, you can ignore this email.");
+        OtpEmail content = new OtpEmail(code, ttlMinutes);
+        MimeMessage message = mailSender.createMimeMessage();
+        try {
+            // plain text and HTML together: a client shows the HTML if it can, and the text if it cannot
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(email);
+            helper.setSubject(content.subject());
+            helper.setText(content.text(), content.html());
+        } catch (MessagingException e) {
+            throw new DependencyFailureException("EMAIL_DELIVERY_FAILED", "Could not send the email. Try again in a moment.", e);
+        }
         try {
             mailSender.send(message);
         } catch (MailException e) {
