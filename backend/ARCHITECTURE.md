@@ -184,6 +184,15 @@ group already filed under the same description (from the cached group data, no e
 with a one- or two-letter typo allowance for longer words. A tie or no match suggests nothing, and the server still files an
 expense with no category as `OTHER`, so API clients and older app versions are unaffected.
 
+## Spending insights
+
+`GET /api/v1/me/spending` (`ledger.InsightsService`) returns the caller's own share of expenses for the last six months, oldest first,
+each with a per-category breakdown, across the groups they are in now (the same scope as Activity). Months are calendar months in
+**IST** (`IstMonths`), not UTC: something added at 1 a.m. on the 1st belongs to the new month for the people who use the app.
+It is one aggregate query: a row per category with six conditional sums (one per month), so the cost is one pass over the
+caller's shares however many months or categories there are. Months with no spending are listed with a zero total. The cost for a
+user with ~10,000 expenses has not been measured (it scans their shares the way Friends does).
+
 ## Payment reminders
 
 `POST /api/v1/groups/{id}/reminders` with `{toUserId}` nudges a member who owes the caller (`ledger.ReminderService`). It is allowed

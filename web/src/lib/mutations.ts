@@ -35,6 +35,7 @@ function useGroupWrite<V>(gid: number, write: (v: V) => Promise<unknown>, optimi
       qc.invalidateQueries({ queryKey: keys.groups(uid) }),
       qc.invalidateQueries({ queryKey: keys.friends(uid) }),
       qc.invalidateQueries({ queryKey: keys.activity(uid) }),
+      qc.invalidateQueries({ queryKey: keys.spending(uid) }),
     ]),
   })
 }
@@ -63,6 +64,7 @@ export function useRefreshGroups() {
       qc.invalidateQueries({ queryKey: keys.groups(uid) }),
       qc.invalidateQueries({ queryKey: keys.friends(uid) }),
       qc.invalidateQueries({ queryKey: keys.activity(uid) }),
+      qc.invalidateQueries({ queryKey: keys.spending(uid) }),
       gid === undefined || opts?.forget ? undefined : qc.invalidateQueries({ queryKey: keys.group(uid, gid) }),
     ])
   }

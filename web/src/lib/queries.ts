@@ -7,6 +7,7 @@ export const keys = {
   groups: (uid: number) => ['u', uid, 'groups'] as const,
   activity: (uid: number) => ['u', uid, 'activity'] as const,
   friends: (uid: number) => ['u', uid, 'friends'] as const,
+  spending: (uid: number) => ['u', uid, 'spending'] as const,
   group: (uid: number, gid: number) => ['u', uid, 'group', gid] as const,
   history: (uid: number, gid: number) => ['u', uid, 'group', gid, 'history'] as const,
   summary: (uid: number, gid: number) => ['u', uid, 'group', gid, 'summary'] as const,
@@ -38,6 +39,12 @@ export function useHistory(gid: number, enabled: boolean) {
     getNextPageParam: (last) => last.nextCursor,
     enabled,
   })
+}
+
+/** The user's own spending by month. Any change to a group's money makes it stale, so writes invalidate it. */
+export function useSpendingInsights() {
+  const uid = useAuth().user!.id
+  return useQuery({ queryKey: keys.spending(uid), queryFn: () => api.spending(), meta: { persist: true } })
 }
 
 export function useFriends() {
