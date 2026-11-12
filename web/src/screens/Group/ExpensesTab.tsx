@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
-import { useDeleteExpense, useDeleteSettlement } from '../../lib/mutations'
+import { useDeleteExpense, useDeleteSettlement, useOfferUndo } from '../../lib/mutations'
 import { dayLabel, formatDate, formatPaise } from '../../lib/money'
 import { categoryEmoji, categoryLabel } from '../../lib/categories'
 import { mergeTimeline } from '../../lib/timeline'
@@ -16,6 +16,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
   const gid = data.group.id
   const deleteExpense = useDeleteExpense(gid)
   const deleteSettlement = useDeleteSettlement(gid)
+  const offerUndo = useOfferUndo()
   const [detail, setDetail] = useState<Expense | null>(null)
   const [showHistory, setShowHistory] = useState(false)
 
@@ -102,7 +103,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
         onDelete={async (e) => {
           if (!(await confirm('Delete this expense?'))) return
           setDetail(null)
-          deleteExpense.mutate(e.id)
+          deleteExpense.mutate(e.id, { onSuccess: () => offerUndo(gid, e.id, 'DELETED') })
         }} />
       <HistorySheet gid={gid} me={me} open={showHistory} onClose={() => setShowHistory(false)} />
       {days.map((d) => (

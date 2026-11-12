@@ -1,8 +1,11 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Sheet } from './sheet'
 
+/** A button on a toast ("Undo"). It lives longer than a plain message, because it needs a moment to read and reach. */
+export interface ToastAction { label: string; run: () => void }
+
 interface Feedback {
-  toast: (msg: string) => void
+  toast: (msg: string, action?: ToastAction) => void
   confirm: (title: string, action?: string) => Promise<boolean>
 }
 
@@ -11,14 +14,14 @@ const FeedbackCtx = createContext<Feedback>(null!)
 export const useFeedback = () => useContext(FeedbackCtx)
 
 export function FeedbackProvider({ children }: { children: ReactNode }) {
-  const [msg, setMsg] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ text: string; action?: ToastAction } | null>(null)
   const timer = useRef<number>(0)
   const [ask, setAsk] = useState<{ title: string; action: string; done: (ok: boolean) => void } | null>(null)
 
-  const toast = useCallback((m: string) => {
-    setMsg(m)
+  const toast = useCallback((text: string, action?: ToastAction) => {
+    setMsg({ text, action })
     window.clearTimeout(timer.current)
-    timer.current = window.setTimeout(() => setMsg(null), 3200)
+    timer.current = window.setTimeout(() => setMsg(null), action ? 6500 : 3200)
   }, [])
   const confirm = useCallback(
     (title: string, action = 'Delete') => new Promise<boolean>((done) => setAsk({ title, action, done })),
@@ -30,8 +33,12 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
     <FeedbackCtx.Provider value={{ toast, confirm }}>
       {children}
       {msg && (
-        <div role="status" className="glass-strong animate-rise fixed bottom-28 left-1/2 z-[60] w-max max-w-[calc(100%-3rem)] -translate-x-1/2 rounded-full px-5 py-3 text-center text-sm font-medium">
-          {msg}
+        <div role="status" className="glass-strong animate-rise fixed bottom-28 left-1/2 z-[60] flex w-max max-w-[calc(100%-3rem)] -translate-x-1/2 items-center gap-3 rounded-full py-3 pl-5 pr-5 text-center text-sm font-medium">
+          <span className="min-w-0">{msg.text}</span>
+          {msg.action && (
+            <button type="button" className="-my-2 -mr-3 shrink-0 rounded-full px-3 py-2 font-bold text-accent"
+              onClick={() => { const run = msg.action!.run; window.clearTimeout(timer.current); setMsg(null); run() }}>{msg.action.label}</button>
+          )}
         </div>
       )}
       <Sheet open={!!ask} onClose={() => close(false)} title={ask?.title}>

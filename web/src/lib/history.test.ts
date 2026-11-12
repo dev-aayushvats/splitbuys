@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { changes, historyView } from './history'
+import { changes, findUndo, historyView } from './history'
 import type { ExpenseSnapshot, HistoryEntry, User } from './types'
 
 const me: User = { id: 1, email: 'a@x.com', name: 'Asha' }
@@ -38,5 +38,25 @@ describe('historyView', () => {
   it('describes creations and restores by the amount', () => {
     expect(historyView(entry({ action: 'CREATED', before: null }), me).detail).toBe('₹600.00')
     expect(historyView(entry({ action: 'RESTORED', before: null }), me).title).toBe('Bo restored “Lunch”')
+  })
+})
+
+describe('findUndo', () => {
+  const mine = entry({ id: 5, actor: me, action: 'DELETED', after: null, undoable: true })
+  it('finds the user’s own newest change to that expense', () => {
+    expect(findUndo([mine, entry({ id: 4, actor: me, action: 'CREATED', before: null })], 9, 'DELETED', me.id)?.id).toBe(5)
+  })
+  it('ignores other expenses when looking for the newest one', () => {
+    expect(findUndo([entry({ id: 7, expenseId: 3 }), mine], 9, 'DELETED', me.id)?.id).toBe(5)
+  })
+  it('gives up when someone else changed the expense since', () => {
+    expect(findUndo([entry({ id: 6, actor: bo, action: 'EDITED', undoable: true }), mine], 9, 'DELETED', me.id)).toBeNull()
+  })
+  it('gives up when the change was made by someone else, or is no longer undoable', () => {
+    expect(findUndo([{ ...mine, actor: bo }], 9, 'DELETED', me.id)).toBeNull()
+    expect(findUndo([{ ...mine, undoable: false }], 9, 'DELETED', me.id)).toBeNull()
+  })
+  it('does not undo a different kind of change than the one offered', () => {
+    expect(findUndo([mine], 9, 'EDITED', me.id)).toBeNull()
   })
 })
