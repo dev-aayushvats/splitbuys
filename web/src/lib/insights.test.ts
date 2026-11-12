@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bars, change, monthName } from './insights'
+import { bars, change, coverage, monthName, perDay, proportions } from './insights'
 import type { MonthSpending } from './types'
 
 const month = (m: string, totalPaise: number): MonthSpending => ({ month: m, totalPaise, categories: [] })
@@ -25,4 +25,25 @@ describe('change', () => {
 it('names months', () => {
   expect(monthName('2026-01')).toBe('Jan')
   expect(monthName('2026-12')).toBe('Dec')
+})
+
+describe('coverage', () => {
+  it('says who carried more', () => {
+    expect(coverage({ paidPaise: 4000, sharePaise: 1800 })).toEqual({ kind: 'covered', paise: 2200 })
+    expect(coverage({ paidPaise: 0, sharePaise: 1000 })).toEqual({ kind: 'owed', paise: 1000 })
+    expect(coverage({ paidPaise: 500, sharePaise: 500 })).toEqual({ kind: 'even', paise: 0 })
+  })
+})
+describe('perDay', () => {
+  it('averages over the days counted, rounding down, and survives a zero', () => {
+    expect(perDay({ sharePaise: 10000, daysCounted: 3 })).toBe(3333)
+    expect(perDay({ sharePaise: 10000, daysCounted: 0 })).toBe(0)
+  })
+})
+describe('proportions', () => {
+  it('scales to the biggest and handles all-zero', () => {
+    expect(proportions([{ paise: 200 }, { paise: 100 }])).toEqual([1, 0.5])
+    expect(proportions([{ paise: 0 }])).toEqual([0])
+    expect(proportions([])).toEqual([])
+  })
 })

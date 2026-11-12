@@ -44,6 +44,15 @@ export interface ExpenseSnapshot { description: string; amountPaise: number; pay
 export interface CategoryAmount { category: ExpenseCategory; paise: number }
 export interface MonthSpending { month: string; totalPaise: number; categories: CategoryAmount[] }
 export interface SpendingInsights { months: MonthSpending[] }
+export interface MonthDetail {
+  month: string
+  sharePaise: number
+  paidPaise: number
+  expenseCount: number
+  daysCounted: number
+  groups: { groupId: number; name: string; paise: number }[]
+  people: { user: User; paise: number }[]
+}
 export interface CategoryTotal { category: ExpenseCategory; totalPaise: number; count: number; mySharePaise: number }
 export interface SpendingSummary { totalPaise: number; mySharePaise: number; categories: CategoryTotal[] }
 /** One change to an expense; `before` is null for a creation and `after` for a deletion. */

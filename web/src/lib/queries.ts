@@ -88,3 +88,13 @@ export function useComments(gid: number, expenseId: number | undefined) {
     enabled: expenseId !== undefined,
   })
 }
+
+/** One month of the user's spending in detail. Under the spending key, so any write to a group refreshes it; fetched only while the card's detail is open. */
+export function useSpendingMonth(month: string, enabled: boolean) {
+  const uid = useAuth().user!.id
+  return useQuery({
+    queryKey: [...keys.spending(uid), month] as const,
+    queryFn: () => api.spendingMonth(month),
+    enabled,
+  })
+}

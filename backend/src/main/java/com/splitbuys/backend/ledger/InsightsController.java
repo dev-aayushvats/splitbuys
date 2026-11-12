@@ -2,6 +2,7 @@ package com.splitbuys.backend.ledger;
 
 import com.splitbuys.backend.common.security.CurrentUser;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -17,5 +18,10 @@ class InsightsController {
     @GetMapping("/spending")
     SpendingInsights spending(@CurrentUser long userId) {
         return insights.spending(userId);
+    }
+
+    @GetMapping("/spending/{month}")
+    MonthDetail month(@CurrentUser long userId, @PathVariable String month) {
+        return insights.month(userId, month);
     }
 }
