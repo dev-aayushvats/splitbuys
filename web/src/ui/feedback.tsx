@@ -36,7 +36,7 @@ export function FeedbackProvider({ children }: { children: ReactNode }) {
         <div role="status" className="glass-strong animate-rise fixed bottom-28 left-1/2 z-[60] flex w-max max-w-[calc(100%-3rem)] -translate-x-1/2 items-center gap-3 rounded-full py-3 pl-5 pr-5 text-center text-sm font-medium">
           <span className="min-w-0">{msg.text}</span>
           {msg.action && (
-            <button type="button" className="-my-2 -mr-3 shrink-0 rounded-full px-3 py-2 font-bold text-accent"
+            <button type="button" className="-my-2 -mr-3 shrink-0 rounded-full px-3 py-2 font-bold text-accent-ink"
               onClick={() => { const run = msg.action!.run; window.clearTimeout(timer.current); setMsg(null); run() }}>{msg.action.label}</button>
           )}
         </div>

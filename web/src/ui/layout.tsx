@@ -10,7 +10,7 @@ export const Skeleton = ({ className = '' }: { className?: string }) => (
 export function EmptyState({ icon, title, children }: { icon: IconName; title: string; children?: ReactNode }) {
   return (
     <div className="animate-rise flex flex-col items-center px-6 py-10 text-center">
-      <div className="grid size-16 place-items-center rounded-full bg-accent/10 text-accent ring-8 ring-accent/5"><Icon name={icon} size={28} /></div>
+      <div className="grid size-16 place-items-center rounded-full bg-accent/10 text-accent-ink ring-8 ring-accent/5"><Icon name={icon} size={28} /></div>
       <div className="mt-5 text-lg font-bold">{title}</div>
       {children && <p className="mt-1.5 max-w-[16rem] leading-relaxed text-muted">{children}</p>}
     </div>
@@ -67,7 +67,7 @@ function PullIndicator({ onRefresh }: { onRefresh: () => void }) {
   return (
     <div aria-hidden className="glass-strong pointer-events-none fixed left-1/2 top-[env(safe-area-inset-top)] z-40 grid size-9 -translate-x-1/2 place-items-center rounded-full"
       style={{ transform: `translateY(${pull - 40}px)`, opacity: progress, transition: start.current === null ? 'transform .25s, opacity .25s' : 'none' }}>
-      {busy ? <Spinner className="size-4" /> : <Icon name="arrow" size={16} className="rotate-90 text-accent" />}
+      {busy ? <Spinner className="size-4" /> : <Icon name="arrow" size={16} className="rotate-90 text-accent-ink" />}
     </div>
   )
 }
@@ -84,7 +84,7 @@ export function ErrorRetry({ error, onRetry }: { error: unknown; onRetry: () => 
   return (
     <Centered>
       <p className="text-ink">{error instanceof Error ? error.message : 'Something went wrong'}</p>
-      <button type="button" onClick={onRetry} className="px-4 py-2 font-semibold text-accent">Retry</button>
+      <button type="button" onClick={onRetry} className="px-4 py-2 font-semibold text-accent-ink">Retry</button>
     </Centered>
   )
 }

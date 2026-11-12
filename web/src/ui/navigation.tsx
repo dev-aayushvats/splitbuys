@@ -100,12 +100,12 @@ export function Dock({ items, index, onChange }: { items: { label: string; icon:
       <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] scrim-bottom" />
       <nav className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full p-1.5">
         <div ref={t.scroller} role="tablist" onScroll={t.onScroll} style={t.style} className="no-scrollbar relative flex snap-x overflow-x-auto rounded-full">
-          <div aria-hidden className="absolute inset-y-0 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          <div aria-hidden className="absolute inset-y-0 rounded-full pill-active transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
             style={{ left: t.box.left, width: t.box.width }} />
           {items.map((it, i) => (
             <button type="button" key={it.label} role="tab" aria-selected={i === index} ref={(el) => { t.items.current[i] = el }}
               onClick={() => { tap(); onChange(i) }}
-              className={`relative z-10 flex h-14 min-w-[6.25rem] shrink-0 snap-center flex-col items-center justify-center gap-0.5 rounded-full px-3 text-[11px] font-semibold transition-colors duration-200 ${i === index ? 'text-accent' : 'text-muted'}`}>
+              className={`relative z-10 flex h-14 min-w-[6.25rem] shrink-0 snap-center flex-col items-center justify-center gap-0.5 rounded-full px-3 text-[11px] font-semibold transition-colors duration-200 ${i === index ? 'text-accent-ink' : 'text-muted'}`}>
               <Icon name={it.icon} size={21} />
               {it.label}
             </button>
@@ -178,14 +178,14 @@ export function MainNav({ onAdd }: { onAdd: () => void }) {
       <nav aria-label="Main" className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 w-[calc(100%-2rem)] max-w-[24rem] -translate-x-1/2 rounded-full p-1.5">
         <div className="relative grid grid-cols-5">
           {active >= 0 && (
-            <div aria-hidden className="absolute inset-y-0 w-1/5 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            <div aria-hidden className="absolute inset-y-0 w-1/5 rounded-full pill-active transition-[left] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
               style={{ left: `${slot(active) * 20}%` }} />
           )}
           {MAIN_TABS.map((t, i) => (
             <button type="button" key={t.to} aria-label={t.label} aria-current={i === active ? 'page' : undefined}
               onClick={() => go(i)}
               style={{ gridColumn: slot(i) + 1 }}
-              className={`relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-semibold transition-colors duration-200 ${i === active ? 'text-accent' : 'text-muted'}`}>
+              className={`relative z-10 flex h-14 flex-col items-center justify-center gap-0.5 rounded-full text-[10.5px] font-semibold transition-colors duration-200 ${i === active ? 'text-accent-ink' : 'text-muted'}`}>
               <Icon name={t.icon} size={21} />
               {t.label}
             </button>

@@ -19,14 +19,14 @@ export function Tile({ leading, title, subtitle, trailing, onClick }: {
 }
 
 export function IconBadge({ icon, tone = 'accent' }: { icon: IconName; tone?: 'accent' | 'pos' | 'neg' }) {
-  const cls = tone === 'pos' ? 'bg-pos/15 text-pos ring-1 ring-pos/25' : tone === 'neg' ? 'bg-neg/15 text-neg ring-1 ring-neg/25' : 'bg-accent/15 text-accent ring-1 ring-accent/25'
+  const cls = tone === 'pos' ? 'bg-pos/15 text-pos ring-1 ring-pos/25' : tone === 'neg' ? 'bg-neg/15 text-neg ring-1 ring-neg/25' : 'bg-accent/15 text-accent-ink ring-1 ring-accent/25'
   return <div className={`grid size-[46px] shrink-0 place-items-center rounded-2xl ${cls}`}><Icon name={icon} size={22} /></div>
 }
 
 export function InfoCard({ icon, label: text, value, valueClass = '' }: { icon: IconName; label: string; value: string; valueClass?: string }) {
   return (
     <div className="glass flex min-w-0 flex-1 flex-col items-center rounded-[28px] px-3 py-4">
-      <div className="grid size-10 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/25"><Icon name={icon} size={21} /></div>
+      <div className="grid size-10 place-items-center rounded-full bg-accent/15 text-accent-ink ring-1 ring-accent/25"><Icon name={icon} size={21} /></div>
       <div className="mt-2 text-xs text-muted">{text}</div>
       <div className={`mt-0.5 max-w-full truncate text-[19px] font-extrabold ${valueClass}`}>{value}</div>
     </div>

@@ -17,7 +17,7 @@ export function ConfirmButton({ children, onClick, busy, disabled, type = 'butto
   return (
     <button type={type} onClick={onClick} disabled={disabled || busy}
       className="btn-accent flex h-15 w-full items-center rounded-full pl-1.5 pr-14 text-base font-bold transition-[transform,opacity] disabled:opacity-45">
-      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-on-accent text-accent">
+      <span className="grid size-12 shrink-0 place-items-center rounded-full bg-on-accent text-accent-ink">
         {busy ? <Spinner className="size-5" /> : <Icon name="arrow" size={22} />}
       </span>
       <span className="flex-1 text-center">{children}</span>
