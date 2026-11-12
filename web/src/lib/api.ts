@@ -1,5 +1,5 @@
 import type {
-  ActivityItem, Balances, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, HistoryEntry, InvitePreview, Page, Profile, ReminderResult, Settlement, SpendingSummary,
+  ActivityItem, Balances, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, HistoryEntry, InvitePreview, Page, Profile, ReminderResult, Settlement, SpendingInsights, SpendingSummary,
 } from './types'
 import { fetchWithRetry, IDEMPOTENCY_HEADER, parseBody, RequestTimeoutError } from './http'
 
@@ -72,6 +72,7 @@ export const api = {
   subscribePush: (sub: { endpoint: string; keys: { p256dh: string; auth: string } }) => send<void>('POST', '/push/subscriptions', sub),
   unsubscribePush: (endpoint: string) => send<void>('DELETE', '/push/subscriptions', { endpoint }),
 
+  spending: () => send<SpendingInsights>('GET', '/me/spending'),
   summary: (g: number) => send<SpendingSummary>('GET', `/groups/${g}/summary`),
   remind: (g: number, toUserId: number) => send<ReminderResult>('POST', `/groups/${g}/reminders`, { toUserId }),
   history: (g: number, cursor?: string | null) =>

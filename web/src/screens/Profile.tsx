@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth'
 import { label } from '../lib/types'
 import { isValidUpi, normalizeUpi } from '../lib/upi'
 import { DeleteAccountSheet } from './DeleteAccount'
+import { InsightsCard } from './InsightsCard'
 import { NotificationsRow } from './Notifications'
 import { Avatar, Icon, ProfileHeader, Screen, useFeedback } from '../ui'
 
@@ -48,7 +49,9 @@ export function ProfileScreen() {
         <ProfileHeader avatar={<Avatar user={me} size={88} />} smallAvatar={<Avatar user={me} size={32} />} name={label(me)} detail={me.email} />
       </div>
 
-      <div className="mt-6 space-y-2 px-5">
+      <div className="mt-6 space-y-4 px-5">
+        <InsightsCard />
+        <div className="space-y-2">
         <div className="glass-lite divide-y divide-white/10 overflow-hidden rounded-[24px]">
           <form onSubmit={save} className="flex items-center gap-3 px-4 py-2.5">
             <label className="flex min-w-0 flex-1 items-center gap-3">
@@ -73,6 +76,7 @@ export function ProfileScreen() {
         {upiInvalid
           ? <p className="px-2 text-[13px] text-neg">That doesn't look like a UPI ID, like name@bank</p>
           : <p className="px-2 text-[12px] text-muted">Your UPI ID is shown only to people who owe you.</p>}
+        </div>
       </div>
 
       <div className="mt-auto px-5 pb-28 pt-8">

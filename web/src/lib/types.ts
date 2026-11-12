@@ -40,6 +40,10 @@ export interface Settlement { id: number; fromUser: User; toUser: User; amountPa
 export type HistoryAction = 'CREATED' | 'EDITED' | 'DELETED' | 'RESTORED' | 'REVERTED'
 export interface ExpenseSnapshot { description: string; amountPaise: number; payer: User; splitType: SplitType; category: ExpenseCategory; shares: Share[] }
 /** `mySharePaise` is the part of the category's spending that falls on the signed-in user. */
+/** The signed-in user's own shares by month (oldest first; the last is the current month in IST), across the groups they are in. */
+export interface CategoryAmount { category: ExpenseCategory; paise: number }
+export interface MonthSpending { month: string; totalPaise: number; categories: CategoryAmount[] }
+export interface SpendingInsights { months: MonthSpending[] }
 export interface CategoryTotal { category: ExpenseCategory; totalPaise: number; count: number; mySharePaise: number }
 export interface SpendingSummary { totalPaise: number; mySharePaise: number; categories: CategoryTotal[] }
 /** One change to an expense; `before` is null for a creation and `after` for a deletion. */

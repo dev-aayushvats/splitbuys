@@ -42,6 +42,13 @@ interface ExpenseRepository extends JpaRepository<Expense, Long> {
             + "where e.group.id = :groupId and s.user.id = :userId group by e.category")
     List<Object[]> myShareByCategory(long groupId, long userId);
 
+    /** One row per category: the user's own share in each of six consecutive months (b0..b6 are the month boundaries). */
+    @Query("select e.category, sum(case when e.createdAt >= :b0 and e.createdAt < :b1 then s.amountPaise else 0 end), sum(case when e.createdAt >= :b1 and e.createdAt < :b2 then s.amountPaise else 0 end), sum(case when e.createdAt >= :b2 and e.createdAt < :b3 then s.amountPaise else 0 end), sum(case when e.createdAt >= :b3 and e.createdAt < :b4 then s.amountPaise else 0 end), sum(case when e.createdAt >= :b4 and e.createdAt < :b5 then s.amountPaise else 0 end), sum(case when e.createdAt >= :b5 and e.createdAt < :b6 then s.amountPaise else 0 end) "
+            + "from ExpenseShare s join s.expense e where s.user.id = :userId and e.group.id in :groupIds "
+            + "and e.createdAt >= :b0 and e.createdAt < :b6 group by e.category")
+    List<Object[]> myShareByMonth(long userId, Collection<Long> groupIds, Instant b0, Instant b1, Instant b2, Instant b3,
+                                  Instant b4, Instant b5, Instant b6);
+
     @Query("select coalesce(sum(e.amountPaise), 0) from Expense e where e.group.id = :groupId")
     long totalSpent(long groupId);
 
