@@ -178,6 +178,12 @@ back as `OTHER`). `GET /groups/{id}/summary` (`ledger.SpendingService`) returns 
 with the caller's own share of each: two aggregate queries (totals, and the caller's shares), however many expenses there are.
 A fixed list is deliberate: free text fragments ("food", "Food ", "dinner") and cannot be summed.
 
+Suggesting a category is done in the web app only (`web/src/lib/suggestCategory.ts`), not on the server: while someone types a
+description on a new expense the matching chip is selected for them until they tap one themselves. It trusts, in order, what the
+group already filed under the same description (from the cached group data, no extra request), then keywords and short phrases,
+with a one- or two-letter typo allowance for longer words. A tie or no match suggests nothing, and the server still files an
+expense with no category as `OTHER`, so API clients and older app versions are unaffected.
+
 ## Payment reminders
 
 `POST /api/v1/groups/{id}/reminders` with `{toUserId}` nudges a member who owes the caller (`ledger.ReminderService`). It is allowed
