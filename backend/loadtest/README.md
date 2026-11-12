@@ -113,3 +113,28 @@ Caveats: one run each, the JIT-on run was in an earlier session, and the load-te
 as indicative, but a 25x difference at 100 visits/s is well outside noise. Suggested change: `ALTER ROLE <app role> SET jit = off`
 (survives restarts, no deploy; session-level `SET` can be lost behind Neon's pooler). Applied on 2026-11-12 with `ALTER ROLE` for the app's role on Neon (a fresh connection reports `jit = off`); connections already in the pool pick it up when they are recycled. Undo with `ALTER ROLE <role> RESET jit`.
 - Not measured: a network hop to the database, more than 10 heavy users, caching or materialised balances.
+
+## Spending, group summary and search (`PG_JIT=off ./run-reads.sh`)
+
+One request at a time (100 visits per user kind after a 30 s warm-up), Postgres JIT off (what production runs now), same
+1 vCPU / 1 vCPU rig, 0 failed requests. "Heavy" = ids 201-210 (about 10,000 expenses in their feed, 200 per heavy group).
+Search text is `expense 1` (matches most rows); the category filters use FOOD, which matches nothing, so the whole scan still happens.
+
+| endpoint | typical median / p95 | heavy median / p95 |
+|---|---|---|
+| `/me/spending` (6 months by category) | 3.5 / 55 ms | 8.3 / 42 ms |
+| `/groups/{id}/summary` | 3.1 / 17 ms | 3.3 / 9 ms |
+| group search, text | 5.4 / 53 ms | 4.8 / 31 ms |
+| group search, category (no match) | 4.2 / 50 ms | 2.9 / 6 ms |
+| `/me/activity` first page, no filter | 6.0 / 60 ms | 14.8 / 45 ms |
+| activity search, text | 4.8 / 59 ms | 13.6 / 48 ms |
+| activity search, category (no match) | 3.0 / 53 ms | 3.5 / 11 ms |
+
+- Search costs about the same as the unfiltered feed: for a heavy user, text search 13.6 ms against 14.8 ms unfiltered.
+- `EXPLAIN ANALYZE` (`results/explain-reads.txt`): group search 1.7 ms using the group/date index, then filtering the group's 200
+  rows; heavy activity search 20 ms (50 groups x 200 rows filtered); a category with no match 1.1 ms. No sequential scan on `expense`.
+- The typical users' p95 (50-60 ms on every endpoint, medians 3-6 ms) is the same on endpoints that differ a lot in work, so it
+  looks like per-user first-request cost (200 different users, 100 samples) and not the queries; I did not isolate it.
+- Not measured: under concurrent load (only one request at a time), more than 200 rows per group, and the production database over
+  the network. The Friends/Activity numbers on Neon were not repeated: that would mean writing about 10,000 test rows into the
+  production database, which I did not do.
