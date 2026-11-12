@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import { useAuth } from './auth'
 import { keys } from './queries'
+import { findUndo } from './history'
 import { withGroupName, withoutExpense, withoutMember, withoutSettlement, withSettlement } from './optimistic'
 import type { GroupData } from './types'
 import { useFeedback } from '../ui'
@@ -67,5 +68,34 @@ export function useRefreshGroups() {
       qc.invalidateQueries({ queryKey: keys.spending(uid) }),
       gid === undefined || opts?.forget ? undefined : qc.invalidateQueries({ queryKey: keys.group(uid, gid) }),
     ])
+  }
+}
+
+/**
+ * "Undo" on the toast shown right after the user deletes or edits an expense. The history entry is looked up only when Undo is
+ * tapped (nothing extra is fetched otherwise), and only the user's own latest change to that expense is undone: if someone else
+ * changed it in between, or the server no longer allows it, the user is pointed to the history sheet instead.
+ */
+export function useOfferUndo() {
+  const { toast } = useFeedback()
+  const refresh = useRefreshGroups()
+  const me = useAuth().user!
+  return (gid: number, expenseId: number, action: 'EDITED' | 'DELETED') => {
+    const done = action === 'DELETED' ? 'Expense restored' : 'Edit undone'
+    toast(action === 'DELETED' ? 'Expense deleted' : 'Expense updated', {
+      label: 'Undo',
+      run: async () => {
+        try {
+          const entry = findUndo((await api.history(gid)).items, expenseId, action, me.id)
+          if (!entry) { toast("Can't undo this any more. See Recent changes in the group."); return }
+          await api.undoChange(gid, entry.id)
+          toast(done)
+        } catch (e) {
+          toast(e instanceof Error ? e.message : 'Something went wrong')
+        } finally {
+          void refresh(gid)
+        }
+      },
+    })
   }
 }

@@ -7,7 +7,7 @@ import { CATEGORIES } from '../lib/categories'
 import { suggestCategory } from '../lib/suggestCategory'
 import { keys } from '../lib/queries'
 import { useIdempotencyKey } from '../lib/idempotency'
-import { useRefreshGroups } from '../lib/mutations'
+import { useOfferUndo, useRefreshGroups } from '../lib/mutations'
 import { hundredthsToInput, parseHundredths } from '../lib/money'
 import { evaluateSplit } from '../lib/splits'
 import { label, type Expense, type ExpenseCategory, type GroupData, type GroupDetail, type SplitType, type User } from '../lib/types'
@@ -51,6 +51,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   const { user } = useAuth()
   const { toast, confirm } = useFeedback()
   const refresh = useRefreshGroups()
+  const offerUndo = useOfferUndo()
   const me = user!
   const members = useMemo(
     () => [...group.members].sort((a, b) => Number(b.id === me.id) - Number(a.id === me.id)),
@@ -116,6 +117,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
       else await api.addExpense(group.id, body, createKey.keyFor(body))
       void refresh(group.id)
       nav(-1)
+      if (expense) offerUndo(group.id, expense.id, 'EDITED')
     } catch (e) {
       setBusy(false)
       toast(e instanceof Error ? e.message : 'Something went wrong')
@@ -125,7 +127,7 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   async function remove() {
     if (!expense || !(await confirm('Delete this expense?'))) return
     setBusy(true)
-    try { await api.deleteExpense(group.id, expense.id); void refresh(group.id); nav(-1) } catch (e) {
+    try { await api.deleteExpense(group.id, expense.id); void refresh(group.id); nav(-1); offerUndo(group.id, expense.id, 'DELETED') } catch (e) {
       setBusy(false)
       toast(e instanceof Error ? e.message : 'Something went wrong')
     }

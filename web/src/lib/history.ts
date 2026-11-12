@@ -40,3 +40,12 @@ export function historyView(h: HistoryEntry, me: User): HistoryView {
       return { title: `${actor} edited ${name}`, detail: h.before && h.after ? changes(h.before, h.after, me).join(' · ') : '' }
   }
 }
+
+/**
+ * The entry that undoes what the user just did to one expense: the newest entry for it, if it is of the expected kind, was
+ * made by the user, and the server still allows an undo. Anything else (someone changed it since, the window closed) is null.
+ */
+export function findUndo(entries: HistoryEntry[], expenseId: number, action: 'EDITED' | 'DELETED', meId: number): HistoryEntry | null {
+  const newest = entries.find((h) => h.expenseId === expenseId)
+  return newest && newest.action === action && newest.actor.id === meId && newest.undoable ? newest : null
+}
