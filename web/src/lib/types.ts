@@ -48,6 +48,8 @@ export interface HistoryEntry {
   after: ExpenseSnapshot | null
   undoable: boolean
 }
+/** `delivered` is false when the person has no way to receive a notification: nothing was sent and the client should offer another way. */
+export interface ReminderResult { delivered: boolean; amountPaise: number; nextAllowedAt: string | null }
 export interface Balance { user: User; netPaise: number }
 // upiId is present only when the signed-in user is the one who must pay and the receiver has set a UPI ID
 export interface Transfer { from: User; to: User; amountPaise: number; upiId: string | null }

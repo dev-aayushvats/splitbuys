@@ -168,6 +168,19 @@ id, and the deletion row remembers which. If someone in the expense has since le
 `MEMBER_LEFT`). Creations cannot be undone (delete the expense instead). `undoable` on each entry tells the client whether undo
 would be accepted now. History is included in database backups.
 
+## Payment reminders
+
+`POST /api/v1/groups/{id}/reminders` with `{toUserId}` nudges a member who owes the caller (`ledger.ReminderService`). It is allowed
+only for a payment the settle-up plan really asks for (the same plan the Balances tab shows; otherwise 409 `NOTHING_OWED`), at
+most once a day per person and group, and at most 20 a day per sender (429), so it cannot be used to pester anyone. The server
+works out the amount itself; the client sends nobody's money. It publishes `ReminderSent`, which `push.PushNotifier` turns into a
+notification for the debtor only, after commit.
+
+Whether the person can be reached is asked through `common.notify.DeviceReach` (implemented by `PushService`), so the ledger does
+not depend on push. If they cannot (notifications off, or no registered device) nothing is recorded or sent and the response says
+`delivered: false` without using up the cooldown; the app then offers a message to send by hand. The `payment_reminder` table
+exists only for the cooldown and the cap (no message text) and is included in backups so restores stay consistent.
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.

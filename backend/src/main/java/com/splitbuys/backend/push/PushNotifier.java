@@ -2,6 +2,7 @@ package com.splitbuys.backend.push;
 
 import com.splitbuys.backend.common.event.ExpenseAdded;
 import com.splitbuys.backend.common.event.PaymentRecorded;
+import com.splitbuys.backend.common.event.ReminderSent;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.RejectedExecutionException;
@@ -42,6 +43,13 @@ class PushNotifier {
     void onPaymentRecorded(PaymentRecorded event) {
         if (push.enabled()) {
             submit(() -> deliver(java.util.List.of(event.fromUserId(), event.toUserId()), id -> PushMessages.forPayment(event, id)));
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    void onReminderSent(ReminderSent event) {
+        if (push.enabled()) {
+            submit(() -> deliver(java.util.List.of(event.debtorId()), id -> PushMessages.forReminder(event, id)));
         }
     }
 

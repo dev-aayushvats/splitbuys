@@ -2,6 +2,7 @@ package com.splitbuys.backend.push;
 
 import com.splitbuys.backend.common.event.ExpenseAdded;
 import com.splitbuys.backend.common.event.PaymentRecorded;
+import com.splitbuys.backend.common.event.ReminderSent;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -57,6 +58,14 @@ final class PushMessages {
             return Optional.of(new Message(p.groupName(), p.actorName() + " recorded your payment of " + amount + " to " + p.toName(), p.groupId()));
         }
         return Optional.empty(); // payments between two other people are not news to you
+    }
+
+    /** Only the person being reminded hears about it. */
+    static Optional<Message> forReminder(ReminderSent r, long recipientId) {
+        if (recipientId != r.debtorId()) {
+            return Optional.empty();
+        }
+        return Optional.of(new Message(r.groupName(), r.senderName() + " reminded you · you owe " + Rupees.format(r.amountPaise()), r.groupId()));
     }
 
     private static String shorten(String text) {

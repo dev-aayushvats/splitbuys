@@ -17,8 +17,11 @@ class NetBalances implements LedgerPort {
     private final ExpenseRepository expenses;
     private final SettlementRepository settlements;
     private final ExpenseHistoryRepository history;
+    private final PaymentReminderRepository reminders;
 
-    NetBalances(ExpenseRepository expenses, SettlementRepository settlements, ExpenseHistoryRepository history) {
+    NetBalances(ExpenseRepository expenses, SettlementRepository settlements, ExpenseHistoryRepository history,
+                PaymentReminderRepository reminders) {
+        this.reminders = reminders;
         this.expenses = expenses;
         this.settlements = settlements;
         this.history = history;
@@ -47,6 +50,7 @@ class NetBalances implements LedgerPort {
     @Transactional
     public void purge(long groupId) {
         history.deleteByGroupId(groupId);
+        reminders.deleteByGroupId(groupId);
         expenses.deleteAll(expenses.findByGroup_Id(groupId));
         settlements.deleteAll(settlements.findByGroup_Id(groupId));
     }

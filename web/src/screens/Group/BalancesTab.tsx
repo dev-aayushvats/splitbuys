@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { api } from '../../lib/api'
 import { useRecordPayment } from '../../lib/mutations'
 import { useIdempotencyKey } from '../../lib/idempotency'
 import { formatPaise, hundredthsToInput, parseHundredths } from '../../lib/money'
+import { reminderMessage } from '../../lib/reminder'
 import { canPayViaUpi } from '../../lib/upi'
 import { label, type GroupData, type Transfer, type User } from '../../lib/types'
 import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Spinner, Tile, inputCls, useFeedback } from '../../ui'
@@ -14,6 +16,21 @@ export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fr
   const [payingPair, setPayingPair] = useState<{ from: number; to: number } | null>(null)
   const payKey = useIdempotencyKey()
   const plan = data.balances.settleUp
+  const { toast } = useFeedback()
+  const [reminding, setReminding] = useState<number | null>(null)
+
+  /** Asks the server to notify the person; if they cannot be notified, offers a message to send by hand instead. */
+  async function remind(t: Transfer) {
+    setReminding(t.from.id)
+    try {
+      const r = await api.remind(data.group.id, t.from.id)
+      if (r.delivered) { toast(`Reminder sent to ${label(t.from)}`); return }
+      const text = reminderMessage(label(t.from), r.amountPaise, data.group.name)
+      if (navigator.share) { try { await navigator.share({ text }) } catch { /* the user closed the share sheet */ } return }
+      try { await navigator.clipboard.writeText(text); toast(`${label(t.from)} has no notifications on. Message copied: paste it in a chat`) } catch { toast('Could not copy the message') }
+    } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
+    finally { setReminding(null) }
+  }
   const paying = payingPair ? plan.find((t) => t.from.id === payingPair.from && t.to.id === payingPair.to) ?? null : null
 
   return (
@@ -46,7 +63,8 @@ export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fr
         </div>
       </section>
 
-      <PaymentSheet transfer={paying} me={me} fresh={fresh} onClose={() => setPayingPair(null)} onSubmit={async (paise) => {
+      <PaymentSheet transfer={paying} me={me} fresh={fresh} reminding={paying !== null && reminding === paying.from.id}
+        onRemind={() => { if (paying) void remind(paying) }} onClose={() => setPayingPair(null)} onSubmit={async (paise) => {
         const t = paying!
         // the sheet closes and the balances update at once; a failure rolls them back and shows the error
         record.mutate({ fromId: t.from.id, toId: t.to.id, amountPaise: paise, key: payKey.keyFor([t.from.id, t.to.id, paise]) }, { onSuccess: payKey.done })
@@ -56,8 +74,9 @@ export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fr
   )
 }
 
-function PaymentSheet({ transfer, me, fresh, onClose, onSubmit }: {
-  transfer: Transfer | null; me: User; fresh: boolean; onClose: () => void; onSubmit: (paise: number) => Promise<void>
+function PaymentSheet({ transfer, me, fresh, reminding, onRemind, onClose, onSubmit }: {
+  transfer: Transfer | null; me: User; fresh: boolean; reminding: boolean; onRemind: () => void; onClose: () => void
+  onSubmit: (paise: number) => Promise<void>
 }) {
   return (
     <Sheet open={!!transfer} onClose={onClose} title={transfer ? `${who(transfer.from, me)} → ${who(transfer.to, me)}` : ''}>
@@ -66,6 +85,12 @@ function PaymentSheet({ transfer, me, fresh, onClose, onSubmit }: {
           {canPayViaUpi(transfer) && <UpiPay transfer={transfer} fresh={fresh} />}
           {transfer.upiId && !canPayViaUpi(transfer) && (
             <p className="px-1 text-[12.5px] text-muted">UPI apps don't allow a single payment above ₹1,00,000. Pay in parts, then record each payment below.</p>
+          )}
+          {transfer.to.id === me.id && (
+            <button type="button" onClick={onRemind} disabled={reminding}
+              className="glass-btn flex w-full items-center justify-center gap-2 rounded-full py-3 font-semibold disabled:opacity-60">
+              {reminding ? <Spinner className="size-4" /> : <Icon name="bell" size={16} />}Remind {label(transfer.from)} to pay
+            </button>
           )}
           <PaymentForm key={`${transfer.from.id}-${transfer.to.id}`} transfer={transfer} onSubmit={onSubmit} />
         </div>

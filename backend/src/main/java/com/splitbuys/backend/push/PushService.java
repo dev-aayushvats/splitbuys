@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 /** Who wants notifications, on which devices. Sending lives in {@link PushNotifier}. */
 @Service
 @Transactional
-public class PushService {
+public class PushService implements com.splitbuys.backend.common.notify.DeviceReach {
     private static final int MAX_DEVICES_PER_USER = 10;
 
     private final PushSubscriptionRepository subscriptions;
@@ -25,6 +25,12 @@ public class PushService {
 
     public boolean enabled() {
         return settings.enabled();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean canNotify(long userId) {
+        return enabled() && !devicesOf(List.of(userId)).isEmpty();
     }
 
     String publicKey() {
