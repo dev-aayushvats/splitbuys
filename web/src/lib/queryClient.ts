@@ -1,5 +1,6 @@
 import { QueryClient } from '@tanstack/react-query'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
+import { outbox } from './outbox'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -29,5 +30,6 @@ export const persistOptions = {
 export function wipeLocalData() {
   void queryClient.cancelQueries() // an in-flight response must not repopulate the cache we are about to empty
   queryClient.clear()
+  outbox().clear()
   try { localStorage.clear(); sessionStorage.clear() } catch { /* storage unavailable (private mode) */ }
 }

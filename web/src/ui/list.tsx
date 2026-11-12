@@ -18,8 +18,8 @@ export function Tile({ leading, title, subtitle, trailing, onClick }: {
   )
 }
 
-export function IconBadge({ icon, tone = 'accent' }: { icon: IconName; tone?: 'accent' | 'pos' }) {
-  const cls = tone === 'pos' ? 'bg-pos/15 text-pos ring-1 ring-pos/25' : 'bg-accent/15 text-accent ring-1 ring-accent/25'
+export function IconBadge({ icon, tone = 'accent' }: { icon: IconName; tone?: 'accent' | 'pos' | 'neg' }) {
+  const cls = tone === 'pos' ? 'bg-pos/15 text-pos ring-1 ring-pos/25' : tone === 'neg' ? 'bg-neg/15 text-neg ring-1 ring-neg/25' : 'bg-accent/15 text-accent ring-1 ring-accent/25'
   return <div className={`grid size-[46px] shrink-0 place-items-center rounded-2xl ${cls}`}><Icon name={icon} size={22} /></div>
 }
 

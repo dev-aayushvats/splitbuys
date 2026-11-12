@@ -4,6 +4,8 @@ import { api } from '../../lib/api'
 import { useDeleteExpense, useDeleteSettlement, useOfferUndo } from '../../lib/mutations'
 import { dayLabel, formatDate, formatPaise } from '../../lib/money'
 import { categoryEmoji, categoryLabel } from '../../lib/categories'
+import { outbox, type Queued } from '../../lib/outbox'
+import { useQueuedExpenses } from '../../lib/useOutbox'
 import { mergeTimeline } from '../../lib/timeline'
 import { label, type Expense, type GroupData, type Settlement, type User } from '../../lib/types'
 import { Avatar, EmptyState, IconBadge, Sheet, Tile, useFeedback } from '../../ui'
@@ -17,6 +19,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
   const deleteExpense = useDeleteExpense(gid)
   const deleteSettlement = useDeleteSettlement(gid)
   const offerUndo = useOfferUndo()
+  const queued = useQueuedExpenses(gid)
   const [detail, setDetail] = useState<Expense | null>(null)
   const [showHistory, setShowHistory] = useState(false)
 
@@ -73,6 +76,17 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
     )
   }
 
+  function queuedTile(q: Queued) {
+    return (
+      <Tile key={q.key} leading={<IconBadge icon="clock" tone={q.error ? 'neg' : undefined} />} title={q.body.description}
+        subtitle={q.error ? `Not saved: ${q.error}` : `${formatPaise(q.body.amountPaise)} · will sync when you are online`}
+        trailing={<span className="text-[13px] font-semibold text-muted">{q.error ? 'Discard' : ''}</span>}
+        onClick={async () => {
+          if (await confirm('Discard this expense? It has not been saved to the server.', 'Discard')) outbox().remove(q.key)
+        }} />
+    )
+  }
+
   function settlementTile(s: GroupData['settlements'][number]) {
     return (
       <Tile key={`s${s.id}`} leading={<IconBadge icon="payments" tone="pos" />}
@@ -86,7 +100,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
     )
   }
 
-  if (items.length === 0 && !hasMore) {
+  if (items.length === 0 && !hasMore && queued.length === 0) {
     return <EmptyState icon="receipt" title="No expenses yet">Tap the + button to add the first one.</EmptyState>
   }
   const days: { day: string; nodes: React.ReactNode[] }[] = []
@@ -106,6 +120,12 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
           deleteExpense.mutate(e.id, { onSuccess: () => offerUndo(gid, e.id, 'DELETED') })
         }} />
       <HistorySheet gid={gid} me={me} open={showHistory} onClose={() => setShowHistory(false)} />
+      {queued.length > 0 && (
+        <section>
+          <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">Waiting to sync</h3>
+          <div className="space-y-3">{queued.map((q) => queuedTile(q))}</div>
+        </section>
+      )}
       {days.map((d) => (
         <section key={d.day}>
           <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{d.day}</h3>
