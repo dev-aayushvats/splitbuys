@@ -28,9 +28,25 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+        with: { fetch-depth: 0 } # full history, so "is this still the newest commit?" is answered exactly
+      # Two merges close together queue two runs; by the time the first is approved, main may have moved on. Deploying the
+      # older commit would ship old code (deploy.sh refuses), so that run steps aside and the newer run deploys everything.
+      - name: Is this still the newest commit on main?
+        id: fresh
+        run: |
+          git fetch -q origin main
+          head="$(git rev-parse HEAD)"; main="$(git rev-parse origin/main)"
+          if [ "$head" = "$main" ] || ! git merge-base --is-ancestor "$head" "$main"; then
+            echo "current=true" >> "$GITHUB_OUTPUT"   # up to date, or not on main at all: let deploy.sh decide
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Skipped: ${head:0:7} is behind main (${main:0:7}). The run for the newer commit deploys it."
+          fi
+      - if: steps.fresh.outputs.current == 'true'
+        uses: actions/setup-java@v4
         with: { distribution: temurin, java-version: 17, cache: maven }
       - name: Set up SSH
+        if: steps.fresh.outputs.current == 'true'
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
@@ -43,6 +59,7 @@ jobs:
       # that started this run, it stops instead of shipping old code. It also builds, tests, checksums, health-checks
       # and rolls back by itself.
       - name: Deploy
+        if: steps.fresh.outputs.current == 'true'
         env:
           SSH_TARGET: ${{ secrets.DEPLOY_SSH_TARGET }}
           API_URL: https://api.splitbuys.aayushvats.com
