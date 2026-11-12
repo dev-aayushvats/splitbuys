@@ -38,5 +38,5 @@ services:
       BASE_URL: http://backend:8080
       JWT_SECRET: loadtest-secret-loadtest-secret-loadtest-secret
       RATES: ${RATES:-25,50,75,100,150}
-    volumes: ["./loadtest.js:/loadtest.js:ro", "./feeds.js:/feeds.js:ro", "./results:/results"]
+    volumes: ["./loadtest.js:/loadtest.js:ro", "./feeds.js:/feeds.js:ro", "./reads.js:/reads.js:ro", "./results:/results"]
     command: ["run", "--summary-export=/results/summary.json", "/loadtest.js"]
