@@ -94,7 +94,22 @@ What it showed:
 - Typical users are negligible. Heavy users cost ~50 ms (Friends, the balances scan) and ~30 ms (Activity first page).
 - Deep pages are cheap; the first page scales with the user's total history (`explain-jit-on.txt`: 10,000 rows read to return 31).
 - Postgres JIT compiled that heavy query for ~69 ms of its 267 ms, because its estimated cost (265k) exceeded `jit_above_cost`
-  (100k). Suggested: `jit = off` for the app's connection. **Not measured under load**: two JIT-off reruns were invalid
-  (latencies longer than the run, empty steps) because the laptop was overloaded (load average ~23). Rerun on a quiet machine
-  (`PG_JIT=off ./run-feeds.sh`) before claiming a saving. Check `SHOW jit;` on Neon too.
+  (100k). Neon runs with `jit = on` and the default thresholds (checked read-only), so this applies in production.
+
+JIT off (`PG_JIT=off ./run-feeds.sh`, one run on a quiet machine, 0 failed requests, 95 dropped iterations), against the JIT-on run above:
+
+| | JIT on | JIT off |
+|---|---|---|
+| heavy first-page query, `EXPLAIN ANALYZE` | 267 ms | 11 ms |
+| heavy activity, one at a time (median / p95) | 29.6 / 104 ms | 13.7 / 28 ms |
+| heavy p95 at 75 visits/s | 645 ms | 76 ms |
+| heavy p95 at 100 visits/s | 1.9 s | 73 ms |
+| typical p95 at 100 visits/s | 944 ms | 9 ms |
+| at 150 visits/s (p95 heavy / dropped) | 10.7 s / 1,528 | 846 ms / 95 |
+| heavy friends (median) | 49.6 ms | 49.9 ms |
+
+The knee moves from about 75-100 to above 100 visits/s. Friends is unchanged (its cost is the balances scan, not JIT).
+Caveats: one run each, the JIT-on run was in an earlier session, and the load-test machine is a laptop; treat the size of the gap
+as indicative, but a 25x difference at 100 visits/s is well outside noise. Suggested change: `ALTER ROLE <app role> SET jit = off`
+(survives restarts, no deploy; session-level `SET` can be lost behind Neon's pooler). Applied on 2026-11-12 with `ALTER ROLE` for the app's role on Neon (a fresh connection reports `jit = off`); connections already in the pool pick it up when they are recycled. Undo with `ALTER ROLE <role> RESET jit`.
 - Not measured: a network hop to the database, more than 10 heavy users, caching or materialised balances.
