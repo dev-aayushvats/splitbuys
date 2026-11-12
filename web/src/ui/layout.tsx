@@ -100,7 +100,7 @@ export const Dashed = ({ children, className = 'p-4' }: { children: ReactNode; c
  */
 export function Backdrop() {
   return (
-    <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-gradient-to-b from-[#17181b] via-[#101113] to-[#09090a]">
+    <div aria-hidden className="app-backdrop pointer-events-none fixed inset-0 -z-10 overflow-hidden">
       <div className="absolute inset-x-0 top-0 h-[60%] bg-[radial-gradient(ellipse_90%_70%_at_30%_0%,rgb(255_255_255/0.05),transparent_70%)]" />
       <svg aria-hidden="true" className="absolute inset-0 size-full opacity-[0.06] mix-blend-overlay">
         <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" /></filter>

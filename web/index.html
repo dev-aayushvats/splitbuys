@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#09090a" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="color-scheme" content="dark light" />
     <meta name="format-detection" content="telephone=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -12,6 +12,18 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <link rel="icon" href="/favicon.png" type="image/png" sizes="64x64" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <script>
+      // before first paint, so a light-theme user never sees a dark flash (same rules as src/lib/theme.ts)
+      (function () {
+        try {
+          var c = localStorage.getItem('theme'), d = matchMedia('(prefers-color-scheme: dark)').matches;
+          var t = c === 'light' || c === 'dark' ? c : d ? 'dark' : 'light';
+          document.documentElement.dataset.theme = t; document.documentElement.style.colorScheme = t;
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', t === 'dark' ? '#09090a' : '#eceef3');
+          document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]').setAttribute('content', t === 'dark' ? 'black-translucent' : 'default');
+        } catch (e) { document.documentElement.dataset.theme = 'dark'; }
+      })();
+    </script>
     <title>SplitBuys</title>
   </head>
   <body>

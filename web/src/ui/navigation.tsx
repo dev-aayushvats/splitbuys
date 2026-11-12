@@ -41,7 +41,7 @@ export function TopBar({ title, showBack = true, action }: { title: string; show
     <>
       <div aria-hidden className="h-[calc(4.75rem+env(safe-area-inset-top))] shrink-0" />
       {/* content dissolves into the page as it passes under the bar */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#17181b]/90 via-[#17181b]/55 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] scrim-top" />
       <header className="glass-strong fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-30 flex w-[calc(100%-2rem)] max-w-[448px] -translate-x-1/2 items-center gap-2 rounded-full p-1.5">
         <div className="w-11">
           {showBack && (
@@ -97,7 +97,7 @@ export function Dock({ items, index, onChange }: { items: { label: string; icon:
   return (
     <>
       {/* content dissolves into the page as it passes under the dock */}
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#09090a] via-[#09090a]/80 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] scrim-bottom" />
       <nav className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full p-1.5">
         <div ref={t.scroller} role="tablist" onScroll={t.onScroll} style={t.style} className="no-scrollbar relative flex snap-x overflow-x-auto rounded-full">
           <div aria-hidden className="absolute inset-y-0 rounded-full bg-white/[0.17] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),0_4px_14px_-4px_rgb(0_0_0/0.4)] transition-[left,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
@@ -174,7 +174,7 @@ export function MainNav({ onAdd }: { onAdd: () => void }) {
   const go = (i: number) => { if (i !== active) goTo(i) }
   return (
     <>
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] bg-gradient-to-t from-[#09090a] via-[#09090a]/80 to-transparent" />
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 mx-auto h-36 max-w-[480px] scrim-bottom" />
       <nav aria-label="Main" className="glass-strong fixed bottom-[calc(1rem+env(safe-area-inset-bottom))] left-1/2 z-30 w-[calc(100%-2rem)] max-w-[24rem] -translate-x-1/2 rounded-full p-1.5">
         <div className="relative grid grid-cols-5">
           {active >= 0 && (
@@ -226,7 +226,7 @@ export function useScrollProgress(range = 56) {
 function StickyBar({ progress, children }: { progress: number; children: ReactNode }) {
   return (
     <>
-      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] bg-gradient-to-b from-[#17181b]/95 via-[#17181b]/60 to-transparent"
+      <div aria-hidden className="pointer-events-none fixed inset-x-0 top-0 z-20 mx-auto h-28 max-w-[480px] scrim-top"
         style={{ opacity: progress }} />
       <div aria-hidden={progress < 0.5} className="pointer-events-none fixed inset-x-0 top-[env(safe-area-inset-top)] z-30 mx-auto flex h-14 max-w-[480px] items-center gap-2.5 px-5"
         style={{ opacity: progress, transform: `translateY(${(1 - progress) * 8}px)` }}>

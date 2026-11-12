@@ -26,7 +26,7 @@ export function NotificationsRow() {
         <button type="button" role="switch" aria-checked={on} aria-label="Notifications on this device" disabled={!canToggle}
           onClick={() => (on ? disable() : enable()).catch(fail)}
           className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40 ${on ? 'bg-accent' : 'bg-white/15'}`}>
-          <span className={`absolute left-0.5 top-0.5 size-6 rounded-full bg-white shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
+          <span className={`absolute left-0.5 top-0.5 size-6 rounded-full bg-[#fff] shadow transition-transform ${on ? 'translate-x-5' : ''}`} />
         </button>
       )}
     </div>
