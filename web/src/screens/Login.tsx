@@ -39,8 +39,8 @@ export function LoginScreen() {
               value={code} disabled={busy} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} />
             <ConfirmButton type="submit" busy={busy} disabled={code.length < 6}>Verify</ConfirmButton>
             <div className="flex justify-center gap-2">
-              <button type="button" disabled={busy} onClick={sendCode} className="px-3 py-2 font-semibold text-accent">Resend code</button>
-              <button type="button" disabled={busy} onClick={() => { setSent(false); setCode('') }} className="px-3 py-2 font-semibold text-accent">Change email</button>
+              <button type="button" disabled={busy} onClick={sendCode} className="px-3 py-2 font-semibold text-accent-ink">Resend code</button>
+              <button type="button" disabled={busy} onClick={() => { setSent(false); setCode('') }} className="px-3 py-2 font-semibold text-accent-ink">Change email</button>
             </div>
           </>
         )}

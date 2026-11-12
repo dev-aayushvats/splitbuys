@@ -71,7 +71,7 @@ export function Overview({ groups }: { groups: GroupSummary[] | undefined }) {
   return (
     <div className="glass overflow-hidden rounded-[32px] p-5">
       <div className="flex items-center gap-2 text-[13px] font-semibold text-muted">
-        <span className="grid size-7 place-items-center rounded-full bg-accent/15 text-accent ring-1 ring-accent/25"><Icon name="wallet" size={15} /></span>
+        <span className="grid size-7 place-items-center rounded-full bg-accent/15 text-accent-ink ring-1 ring-accent/25"><Icon name="wallet" size={15} /></span>
         Overall balance
       </div>
       <div className={`mt-3 truncate text-[34px] font-extrabold leading-none ${tone}`}>{formatPaise(Math.abs(o.net))}</div>
