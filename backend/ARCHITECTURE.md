@@ -187,6 +187,18 @@ group already filed under the same description (from the cached group data, no e
 with a one- or two-letter typo allowance for longer words. A tie or no match suggests nothing, and the server still files an
 expense with no category as `OTHER`, so API clients and older app versions are unaffected.
 
+## Search and filter
+
+`GET /groups/{id}/expenses` and `GET /me/activity` take optional `q` (text, at most 100 characters) and `category`. The filter is
+applied in SQL, in the same query that picks the page of ids, so a page is a page of matches and the cursor pages through matches
+only (filtering after the page was cut would return short or empty pages). `q` is a case-insensitive "contains" on the
+description: `lower(description) like :pattern escape '!'`, where `%`, `_` and `!` typed by the user are escaped so they mean
+themselves. The queries never receive a null: "no text" is the pattern `%` and "no category" is every category (a null
+parameter in a LIKE or IN is typed differently by PostgreSQL and SQLite). With a filter on, Activity leaves payments out
+(they have no description or category). Known limits: `like '%x%'` cannot use an index, which is acceptable because the scan is
+confined to one group (or the user's groups); SQLite's `lower()` only folds ASCII, so non-ASCII case-insensitivity is exact on
+PostgreSQL but not on local SQLite. If groups grow large, a trigram index (`pg_trgm`) is the next step.
+
 ## Spending insights
 
 `GET /api/v1/me/spending` (`ledger.InsightsService`) returns the caller's own share of expenses for the last six months, oldest first,

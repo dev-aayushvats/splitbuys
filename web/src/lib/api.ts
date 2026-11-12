@@ -1,6 +1,7 @@
 import type {
   ActivityItem, Balances, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, HistoryEntry, InvitePreview, Page, Profile, ReminderResult, Settlement, SpendingInsights, SpendingSummary,
 } from './types'
+import { filterQuery, type SearchFilter } from './searchFilter'
 import { fetchWithRetry, IDEMPOTENCY_HEADER, parseBody, RequestTimeoutError } from './http'
 
 // Unset (dev): the local backend. Set to an empty string (the Docker image does this): same origin, i.e. calls go to /api on
@@ -78,8 +79,8 @@ export const api = {
   history: (g: number, cursor?: string | null) =>
     send<Page<HistoryEntry>>('GET', `/groups/${g}/history?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
   undoChange: (g: number, historyId: number) => send<HistoryEntry>('POST', `/groups/${g}/history/${historyId}/undo`),
-  activity: (cursor?: string | null) =>
-    send<Page<ActivityItem>>('GET', `/me/activity?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
+  activity: (cursor?: string | null, filter?: SearchFilter) =>
+    send<Page<ActivityItem>>('GET', `/me/activity?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}${filter ? filterQuery(filter) : ''}`),
   friends: () => send<Friend[]>('GET', '/me/friends'),
   groups: () => send<GroupSummary[]>('GET', '/groups'),
   createGroup: (name: string, key: string) => send<GroupDetail>('POST', '/groups', { name }, key),
@@ -93,8 +94,8 @@ export const api = {
   previewInvite: (t: string) => send<InvitePreview>('GET', `/invites/${t}`),
   joinInvite: (t: string) => send<GroupDetail>('POST', `/invites/${t}/join`),
 
-  expenses: (g: number, cursor?: string | null) =>
-    send<Page<Expense>>('GET', `/groups/${g}/expenses?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}`),
+  expenses: (g: number, cursor?: string | null, filter?: SearchFilter) =>
+    send<Page<Expense>>('GET', `/groups/${g}/expenses?limit=${PAGE_SIZE}${cursor ? `&cursor=${cursor}` : ''}${filter ? filterQuery(filter) : ''}`),
   expense: (g: number, e: number) => send<Expense>('GET', `/groups/${g}/expenses/${e}`),
   addExpense: (g: number, b: ExpenseBody, key: string) => send<void>('POST', `/groups/${g}/expenses`, b, key),
   updateExpense: (g: number, e: number, b: ExpenseBody) => send<void>('PUT', `/groups/${g}/expenses/${e}`, b),

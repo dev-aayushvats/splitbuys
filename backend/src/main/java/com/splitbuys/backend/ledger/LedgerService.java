@@ -58,11 +58,12 @@ public class LedgerService {
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ExpenseDto> listExpenses(long groupId, long userId, int limit, String cursor) {
+    public PageResponse<ExpenseDto> listExpenses(long groupId, long userId, int limit, String cursor, String text, ExpenseCategory category) {
         groups.requireMember(groupId, userId);
+        ExpenseFilter f = ExpenseFilter.of(text, category);
         return page(limit, cursor,
-                size -> expenses.firstPageIds(groupId, size),
-                (c, size) -> expenses.idsAfter(groupId, c.createdAt(), c.id(), size),
+                size -> expenses.firstPageIds(groupId, f.pattern(), f.categories(), size),
+                (c, size) -> expenses.idsAfter(groupId, f.pattern(), f.categories(), c.createdAt(), c.id(), size),
                 expenses::findByIdIn, Expense::getId, Expense::getCreatedAt, ExpenseDto::from);
     }
 

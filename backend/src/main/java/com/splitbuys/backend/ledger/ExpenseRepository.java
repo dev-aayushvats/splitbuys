@@ -12,12 +12,14 @@ import org.springframework.data.jpa.repository.Query;
 interface ExpenseRepository extends JpaRepository<Expense, Long> {
     // Two steps on purpose: LIMIT combined with a collection fetch makes Hibernate page in memory (the whole history is
     // loaded). So page the ids in SQL first, then load full rows for just those ids.
-    @Query("select e.id from Expense e where e.group.id = :groupId order by e.createdAt desc, e.id desc")
-    List<Long> firstPageIds(Long groupId, Pageable page);
-
-    @Query("select e.id from Expense e where e.group.id = :groupId and (e.createdAt < :at or (e.createdAt = :at and e.id < :id)) "
+    // The filter is applied here, in SQL, so a page is a page of matches (not a page of everything with some hidden by the client).
+    @Query("select e.id from Expense e where e.group.id = :groupId and lower(e.description) like :pattern escape '!' and e.category in :categories "
             + "order by e.createdAt desc, e.id desc")
-    List<Long> idsAfter(Long groupId, Instant at, long id, Pageable page);
+    List<Long> firstPageIds(Long groupId, String pattern, Collection<ExpenseCategory> categories, Pageable page);
+
+    @Query("select e.id from Expense e where e.group.id = :groupId and lower(e.description) like :pattern escape '!' and e.category in :categories "
+            + "and (e.createdAt < :at or (e.createdAt = :at and e.id < :id)) order by e.createdAt desc, e.id desc")
+    List<Long> idsAfter(Long groupId, String pattern, Collection<ExpenseCategory> categories, Instant at, long id, Pageable page);
 
     @EntityGraph(attributePaths = {"payer", "createdBy", "shares", "shares.user"})
     List<Expense> findByIdIn(Collection<Long> ids);
@@ -56,13 +58,15 @@ interface ExpenseRepository extends JpaRepository<Expense, Long> {
     // expenses and payments can be merged before any full row is loaded.
     @Query("select new com.splitbuys.backend.ledger.Stamp(e.id, e.createdAt) from Expense e where e.group.id in :groupIds "
             + "and (e.payer.id = :userId or exists (select 1 from ExpenseShare s where s.expense = e and s.user.id = :userId)) "
+            + "and lower(e.description) like :pattern escape '!' and e.category in :categories "
             + "order by e.createdAt desc, e.id desc")
-    List<Stamp> involvingFirst(Collection<Long> groupIds, long userId, Pageable page);
+    List<Stamp> involvingFirst(Collection<Long> groupIds, long userId, String pattern, Collection<ExpenseCategory> categories, Pageable page);
 
     @Query("select new com.splitbuys.backend.ledger.Stamp(e.id, e.createdAt) from Expense e where e.group.id in :groupIds "
             + "and (e.payer.id = :userId or exists (select 1 from ExpenseShare s where s.expense = e and s.user.id = :userId)) "
+            + "and lower(e.description) like :pattern escape '!' and e.category in :categories "
             + "and (e.createdAt < :at or (e.createdAt = :at and e.id < :id)) order by e.createdAt desc, e.id desc")
-    List<Stamp> involvingAfter(Collection<Long> groupIds, long userId, Instant at, long id, Pageable page);
+    List<Stamp> involvingAfter(Collection<Long> groupIds, long userId, String pattern, Collection<ExpenseCategory> categories, Instant at, long id, Pageable page);
 
     @EntityGraph(attributePaths = {"group", "payer", "createdBy", "shares", "shares.user"})
     List<Expense> findForActivityByIdIn(Collection<Long> ids);

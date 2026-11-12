@@ -42,8 +42,10 @@ public class ActivityService {
         this.settlements = settlements;
     }
 
-    public PageResponse<ActivityItem> list(long userId, int limit, String cursor) {
+    /** With a text or category filter only expenses can match: a payment has neither a description nor a category, so none are listed. */
+    public PageResponse<ActivityItem> list(long userId, int limit, String cursor, String text, ExpenseCategory category) {
         PageCursor.checkLimit(limit);
+        ExpenseFilter f = ExpenseFilter.of(text, category);
         ActivityCursor from = ActivityCursor.decode(cursor);
         List<Long> groupIds = groups.groupIdsOf(userId);
         if (groupIds.isEmpty()) {
@@ -52,12 +54,14 @@ public class ActivityService {
         Pageable size = PageRequest.ofSize(limit + 1);
 
         List<Entry> merged = new ArrayList<>();
-        (from == null ? expenses.involvingFirst(groupIds, userId, size)
-                : expenses.involvingAfter(groupIds, userId, from.at(), from.idBoundFor(ActivityItem.Type.EXPENSE), size))
+        (from == null ? expenses.involvingFirst(groupIds, userId, f.pattern(), f.categories(), size)
+                : expenses.involvingAfter(groupIds, userId, f.pattern(), f.categories(), from.at(), from.idBoundFor(ActivityItem.Type.EXPENSE), size))
                 .forEach(s -> merged.add(new Entry(ActivityItem.Type.EXPENSE, s)));
-        (from == null ? settlements.involvingFirst(groupIds, userId, size)
-                : settlements.involvingAfter(groupIds, userId, from.at(), from.idBoundFor(ActivityItem.Type.PAYMENT), size))
-                .forEach(s -> merged.add(new Entry(ActivityItem.Type.PAYMENT, s)));
+        if (!f.active()) {
+            (from == null ? settlements.involvingFirst(groupIds, userId, size)
+                    : settlements.involvingAfter(groupIds, userId, from.at(), from.idBoundFor(ActivityItem.Type.PAYMENT), size))
+                    .forEach(s -> merged.add(new Entry(ActivityItem.Type.PAYMENT, s)));
+        }
         merged.sort(NEWEST_FIRST);
 
         boolean more = merged.size() > limit;
