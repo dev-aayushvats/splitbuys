@@ -1,5 +1,5 @@
 import type {
-  ActivityItem, Balances, Comment, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, HistoryEntry, InvitePreview, Page, Profile, ReminderResult, Settlement, SpendingInsights, SpendingSummary,
+  ActivityItem, Balances, Comment, Expense, ExpenseBody, Friend, GroupData, GroupDetail, GroupSummary, HistoryEntry, InvitePreview, MonthDetail, Page, Profile, ReminderResult, Settlement, SpendingInsights, SpendingSummary,
 } from './types'
 import { filterQuery, type SearchFilter } from './searchFilter'
 import { fetchWithRetry, IDEMPOTENCY_HEADER, parseBody, RequestTimeoutError } from './http'
@@ -74,6 +74,7 @@ export const api = {
   unsubscribePush: (endpoint: string) => send<void>('DELETE', '/push/subscriptions', { endpoint }),
 
   spending: () => send<SpendingInsights>('GET', '/me/spending'),
+  spendingMonth: (month: string) => send<MonthDetail>('GET', `/me/spending/${month}`),
   comments: (g: number, e: number) => send<Comment[]>('GET', `/groups/${g}/expenses/${e}/comments`),
   addComment: (g: number, e: number, text: string) => send<Comment>('POST', `/groups/${g}/expenses/${e}/comments`, { text }),
   deleteComment: (g: number, c: number) => send<void>('DELETE', `/groups/${g}/comments/${c}`),

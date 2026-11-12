@@ -51,6 +51,26 @@ interface ExpenseRepository extends JpaRepository<Expense, Long> {
     List<Object[]> myShareByMonth(long userId, Collection<Long> groupIds, Instant b0, Instant b1, Instant b2, Instant b3,
                                   Instant b4, Instant b5, Instant b6);
 
+
+    // One month in detail for one user (see MonthDetail): [from, to) is the month, groupIds the groups they are in now.
+    @Query("select coalesce(sum(s.amountPaise), 0), count(e) from ExpenseShare s join s.expense e "
+            + "where s.user.id = :userId and e.group.id in :groupIds and e.createdAt >= :from and e.createdAt < :to")
+    List<Object[]> myShareTotal(long userId, Collection<Long> groupIds, Instant from, Instant to);
+
+    @Query("select coalesce(sum(e.amountPaise), 0) from Expense e "
+            + "where e.payer.id = :userId and e.group.id in :groupIds and e.createdAt >= :from and e.createdAt < :to")
+    long paidTotal(long userId, Collection<Long> groupIds, Instant from, Instant to);
+
+    @Query("select e.group.id, e.group.name, sum(s.amountPaise) from ExpenseShare s join s.expense e "
+            + "where s.user.id = :userId and e.group.id in :groupIds and e.createdAt >= :from and e.createdAt < :to "
+            + "group by e.group.id, e.group.name order by sum(s.amountPaise) desc, e.group.id")
+    List<Object[]> myShareByGroup(long userId, Collection<Long> groupIds, Instant from, Instant to, Pageable page);
+
+    @Query("select o.user.id, sum(s.amountPaise) from ExpenseShare s join s.expense e join ExpenseShare o on o.expense = e "
+            + "where s.user.id = :userId and o.user.id <> :userId and e.group.id in :groupIds "
+            + "and e.createdAt >= :from and e.createdAt < :to group by o.user.id order by sum(s.amountPaise) desc, o.user.id")
+    List<Object[]> myShareWithPeople(long userId, Collection<Long> groupIds, Instant from, Instant to, Pageable page);
+
     @Query("select coalesce(sum(e.amountPaise), 0) from Expense e where e.group.id = :groupId")
     long totalSpent(long groupId);
 

@@ -219,6 +219,14 @@ It is one aggregate query: a row per category with six conditional sums (one per
 caller's shares however many months or categories there are. Months with no spending are listed with a zero total. The cost for a
 user with ~10,000 expenses has not been measured (it scans their shares the way Friends does).
 
+`GET /me/spending/{yyyy-MM}` (`InsightsService.month`) is the same view for one IST month, fetched only when the Profile card's
+details are opened, so the six-month overview stays one cheap query. It returns the user's share, what they actually paid out
+(the full amount of expenses they were the payer of), how many expenses they shared in, the days counted (elapsed days for the
+current month, all days for a past one, for a per-day average), the top five groups, and the top five people they shared the
+most expenses with (by the user's own share of those expenses, so the figures of different people overlap and are not meant to
+add up). Months in the future, or more than 24 back, are refused (400). Four small aggregate queries; indexes on group and
+expense already cover them.
+
 ## Payment reminders
 
 `POST /api/v1/groups/{id}/reminders` with `{toUserId}` nudges a member who owes the caller (`ledger.ReminderService`). It is allowed

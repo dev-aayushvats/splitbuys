@@ -1,4 +1,4 @@
-import type { MonthSpending, SpendingInsights } from './types'
+import type { MonthDetail, MonthSpending, SpendingInsights } from './types'
 
 const NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -29,4 +29,22 @@ export function change(months: MonthSpending[]): { percent: number; up: boolean 
   if (!prev || !now || prev.totalPaise === 0) return null
   const percent = Math.round(((now.totalPaise - prev.totalPaise) / prev.totalPaise) * 100)
   return { percent: Math.abs(percent), up: percent > 0 }
+}
+
+/**
+ * Paid out against own share. "Covered" means the person paid more than their share (others owe them the difference, or
+ * already paid it back), "owed" the reverse. Both counts are of the expenses of that month only.
+ */
+export function coverage(d: Pick<MonthDetail, 'paidPaise' | 'sharePaise'>): { kind: 'covered' | 'owed' | 'even'; paise: number } {
+  const diff = d.paidPaise - d.sharePaise
+  return { kind: diff > 0 ? 'covered' : diff < 0 ? 'owed' : 'even', paise: Math.abs(diff) }
+}
+
+/** Average share per day over the days counted (whole paise, rounded down). Zero when no day has been counted. */
+export const perDay = (d: Pick<MonthDetail, 'sharePaise' | 'daysCounted'>) => (d.daysCounted > 0 ? Math.floor(d.sharePaise / d.daysCounted) : 0)
+
+/** Each item's width as a share of the biggest one (0 to 1), for thin proportion bars. */
+export function proportions<T extends { paise: number }>(items: T[]): number[] {
+  const biggest = Math.max(0, ...items.map((i) => i.paise))
+  return items.map((i) => (biggest > 0 ? i.paise / biggest : 0))
 }

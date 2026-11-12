@@ -92,4 +92,64 @@ class InsightsApiTest extends ApiTest {
         get("/api/v1/me/spending", b).andExpect(jsonPath("$.months[5].totalPaise").value(0));
         get("/api/v1/me/spending", a).andExpect(jsonPath("$.months[5].totalPaise").value(500));
     }
+
+    @Test
+    void aMonthInDetailSplitsPaidFromShareAndRanksGroupsAndPeople() throws Exception {
+        Session a = signIn("Asha"), b = signIn("Bo"), c = signIn("Chi");
+        long one = groupOf(a, b), two = groupOf(a, b, c);
+        add(one, a, "Dinner", 1000, "FOOD", a, a, b);          // Asha paid 1000, her share 500, with Bo
+        add(two, a, "Hotel", 3000, "STAY", a, a, b, c);        // paid 3000, share 1000, with Bo and Chi
+        add(two, b, "Cab", 600, "TRAVEL", b, a, b);            // Bo paid, Asha's share 300, with Bo
+        add(one, b, "Bo only", 900, "SHOPPING", b, b);         // not Asha's
+
+        get("/api/v1/me/spending/" + month(0), a).andExpect(status().isOk())
+                .andExpect(jsonPath("$.month").value(month(0)))
+                .andExpect(jsonPath("$.sharePaise").value(500 + 1000 + 300))
+                .andExpect(jsonPath("$.paidPaise").value(1000 + 3000))
+                .andExpect(jsonPath("$.expenseCount").value(3))
+                .andExpect(jsonPath("$.groups.length()").value(2))
+                .andExpect(jsonPath("$.groups[0].groupId").value((int) two))
+                .andExpect(jsonPath("$.groups[0].paise").value(1300))
+                .andExpect(jsonPath("$.groups[1].paise").value(500))
+                .andExpect(jsonPath("$.people.length()").value(2))
+                .andExpect(jsonPath("$.people[0].user.name").value("Bo"))
+                .andExpect(jsonPath("$.people[0].paise").value(1800))
+                .andExpect(jsonPath("$.people[1].user.name").value("Chi"))
+                .andExpect(jsonPath("$.people[1].paise").value(1000));
+        // the same expenses from Chi's side: only the hotel
+        get("/api/v1/me/spending/" + month(0), c).andExpect(jsonPath("$.sharePaise").value(1000))
+                .andExpect(jsonPath("$.paidPaise").value(0)).andExpect(jsonPath("$.groups.length()").value(1));
+    }
+
+    @Test
+    void aMonthWithNothingHasZerosAndDaysCountedFollowsTheCalendar() throws Exception {
+        Session a = signIn("Asha");
+        get("/api/v1/me/spending/" + month(0), a).andExpect(jsonPath("$.sharePaise").value(0)).andExpect(jsonPath("$.groups.length()").value(0))
+                .andExpect(jsonPath("$.people.length()").value(0))
+                .andExpect(jsonPath("$.daysCounted").value(java.time.LocalDate.now(IST).getDayOfMonth()));
+        get("/api/v1/me/spending/" + month(2), a)
+                .andExpect(jsonPath("$.daysCounted").value(YearMonth.now(IST).minusMonths(2).lengthOfMonth()));
+    }
+
+    @Test
+    void anExpenseIsFiledUnderItsOwnMonthInDetail() throws Exception {
+        Session a = signIn("Asha"), b = signIn("Bo");
+        long g = groupOf(a, b);
+        long old = add(g, a, "Old", 1000, "FOOD", a, a, b);
+        jdbc.update("update expense set created_at = ? where id = ?",
+                Timestamp.from(YearMonth.now(IST).minusMonths(1).atDay(15).atStartOfDay(IST).toInstant()), old);
+        get("/api/v1/me/spending/" + month(1), a).andExpect(jsonPath("$.sharePaise").value(500)).andExpect(jsonPath("$.expenseCount").value(1));
+        get("/api/v1/me/spending/" + month(0), a).andExpect(jsonPath("$.sharePaise").value(0));
+    }
+
+    @Test
+    void badMonthsAreRefused() throws Exception {
+        Session a = signIn("Asha");
+        get("/api/v1/me/spending/banana", a).andExpect(status().isBadRequest());
+        get("/api/v1/me/spending/2026-13", a).andExpect(status().isBadRequest());
+        get("/api/v1/me/spending/" + YearMonth.now(IST).plusMonths(1), a).andExpect(status().isBadRequest());
+        get("/api/v1/me/spending/" + YearMonth.now(IST).minusMonths(25), a).andExpect(status().isBadRequest());
+        get("/api/v1/me/spending/" + month(24), a).andExpect(status().isOk());
+        get("/api/v1/me/spending/" + month(0), null).andExpect(status().isUnauthorized());
+    }
 }
