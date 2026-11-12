@@ -153,6 +153,21 @@ Measured cost (`loadtest/README.md`, one laptop VM): a deep page is cheap, but t
 history, because the plan reads all of the caller's expenses before taking `limit + 1`. A user in 50 groups with 10k expenses
 pays about 30 ms for it; a typical user pays about 7 ms. Friends costs about 50 ms for that heavy user (the balances scan).
 
+## Expense history and undo
+
+Every create, edit and delete of an expense writes a row to `expense_history` in the same transaction (`ledger.HistoryLog`): who,
+when, and JSON snapshots of the expense before and after (user ids only, so a later rename shows through, and nothing about a
+deleted account's owner is copied). `expense_id` has no foreign key, so the history of a deleted expense outlives it; rows go
+with the group. `GET /groups/{id}/history` pages the group's changes (keyset, like the other lists) and
+`GET /groups/{id}/expenses/{id}/history` shows one expense's (newest 50). Saving an edit that changes nothing writes no row.
+
+`POST /groups/{id}/history/{id}/undo` handles two cases. An **edit** can be undone only while it is still the newest change to
+that expense, otherwise the undo would silently throw away a later edit (409 `CHANGED_SINCE`); it restores the earlier state and
+records a `REVERTED` row. A **deletion** can be undone once (409 `ALREADY_RESTORED`): it creates the expense again, with a new
+id, and the deletion row remembers which. If someone in the expense has since left the group it cannot be restored (409
+`MEMBER_LEFT`). Creations cannot be undone (delete the expense instead). `undoable` on each entry tells the client whether undo
+would be accepted now. History is included in database backups.
+
 ## API
 
 Versioned under `/api/v1`. Money is integer paise. All errors are problem documents. `GET /actuator/health` is public.

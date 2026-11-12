@@ -66,9 +66,9 @@ public class BackupService {
      * device tokens that the app re-registers every time it opens, so a restore need not carry them (and a backup file
      * need not hold them).
      */
-    static final List<String> TABLES = List.of("app_user", "expense_group", "group_member", "expense", "expense_share", "settlement");
+    static final List<String> TABLES = List.of("app_user", "expense_group", "group_member", "expense", "expense_share", "settlement", "expense_history");
     /** Tables whose {@code id} comes from an identity sequence that must be advanced after loading explicit ids. */
-    private static final List<String> IDENTITY_TABLES = List.of("app_user", "expense_group", "expense", "expense_share", "settlement");
+    private static final List<String> IDENTITY_TABLES = List.of("app_user", "expense_group", "expense", "expense_share", "settlement", "expense_history");
 
     private static final String PREFIX = "splitbuys-";
     private static final String SUFFIX = ".sql.gz";

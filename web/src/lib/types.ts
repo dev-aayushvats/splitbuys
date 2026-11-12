@@ -35,6 +35,19 @@ export interface Expense {
   shares: Share[]
 }
 export interface Settlement { id: number; fromUser: User; toUser: User; amountPaise: number; createdAt: string }
+export type HistoryAction = 'CREATED' | 'EDITED' | 'DELETED' | 'RESTORED' | 'REVERTED'
+export interface ExpenseSnapshot { description: string; amountPaise: number; payer: User; splitType: SplitType; shares: Share[] }
+/** One change to an expense; `before` is null for a creation and `after` for a deletion. */
+export interface HistoryEntry {
+  id: number
+  expenseId: number
+  action: HistoryAction
+  actor: User
+  at: string
+  before: ExpenseSnapshot | null
+  after: ExpenseSnapshot | null
+  undoable: boolean
+}
 export interface Balance { user: User; netPaise: number }
 // upiId is present only when the signed-in user is the one who must pay and the receiver has set a UPI ID
 export interface Transfer { from: User; to: User; amountPaise: number; upiId: string | null }

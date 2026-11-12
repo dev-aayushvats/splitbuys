@@ -8,6 +8,7 @@ export const keys = {
   activity: (uid: number) => ['u', uid, 'activity'] as const,
   friends: (uid: number) => ['u', uid, 'friends'] as const,
   group: (uid: number, gid: number) => ['u', uid, 'group', gid] as const,
+  history: (uid: number, gid: number) => ['u', uid, 'group', gid, 'history'] as const,
 }
 
 export function useGroups() {
@@ -18,6 +19,18 @@ export function useGroups() {
 export function useGroupData(gid: number) {
   const uid = useAuth().user!.id
   return useQuery({ queryKey: keys.group(uid, gid), queryFn: () => api.groupData(gid), meta: { persist: true } })
+}
+
+/** A group's change history (edits, deletions, restores), a page at a time. Not kept on disk. */
+export function useHistory(gid: number, enabled: boolean) {
+  const uid = useAuth().user!.id
+  return useInfiniteQuery({
+    queryKey: keys.history(uid, gid),
+    queryFn: ({ pageParam }) => api.history(gid, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (last) => last.nextCursor,
+    enabled,
+  })
 }
 
 export function useFriends() {

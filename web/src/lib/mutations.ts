@@ -47,6 +47,8 @@ export const useRecordPayment = (gid: number) => useGroupWrite(
   gid,
   (p: { fromId: number; toId: number; amountPaise: number; key: string }) => api.addSettlement(gid, p.fromId, p.toId, p.amountPaise, p.key),
   (d, p) => withSettlement(d, p.fromId, p.toId, p.amountPaise))
+/** No optimistic step: the server decides whether the undo is still allowed, and a restored expense gets a new id. The history list is keyed under the group, so the group's own invalidation refreshes it too. */
+export const useUndoChange = (gid: number) => useGroupWrite(gid, (historyId: number) => api.undoChange(gid, historyId))
 /** No optimistic step: the new invite link is made by the server. */
 export const useRegenerateInvite = (gid: number) => useGroupWrite(gid, () => api.regenerateInvite(gid))
 
