@@ -47,6 +47,7 @@ export interface SpendingInsights { months: MonthSpending[] }
 export interface CategoryTotal { category: ExpenseCategory; totalPaise: number; count: number; mySharePaise: number }
 export interface SpendingSummary { totalPaise: number; mySharePaise: number; categories: CategoryTotal[] }
 /** One change to an expense; `before` is null for a creation and `after` for a deletion. */
+export interface Comment { id: number; author: User; text: string; createdAt: string }
 export interface HistoryEntry {
   id: number
   expenseId: number

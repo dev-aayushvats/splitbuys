@@ -11,6 +11,7 @@ import { label, type Expense, type GroupData, type Settlement, type User } from 
 import { isFiltering, NO_FILTER } from '../../lib/searchFilter'
 import { useExpenseSearch } from '../../lib/queries'
 import { Avatar, EmptyState, IconBadge, Sheet, SearchBar, Tile, useDebounced, useFeedback } from '../../ui'
+import { Comments } from './Comments'
 import { HistorySheet } from './HistorySheet'
 import { who } from './shared'
 
@@ -122,7 +123,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
   }
   return (
     <div className="space-y-5">
-      <ExpenseDetail expense={detail} me={me}
+      <ExpenseDetail gid={gid} expense={detail} me={me}
         onClose={() => setDetail(null)}
         onEdit={(e) => nav(`/groups/${gid}/expense/${e.id}`)}
         onDelete={async (e) => {
@@ -161,8 +162,8 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
 
 const SPLIT_LABEL = { EQUAL: 'Split equally', EXACT: 'Split by exact amounts', PERCENT: 'Split by percentage', SHARES: 'Split by shares' } as const
 
-function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
-  expense: Expense | null; me: User; onClose: () => void; onEdit: (e: Expense) => void; onDelete: (e: Expense) => void
+function ExpenseDetail({ gid, expense: e, me, onClose, onEdit, onDelete }: {
+  gid: number; expense: Expense | null; me: User; onClose: () => void; onEdit: (e: Expense) => void; onDelete: (e: Expense) => void
 }) {
   return (
     <Sheet open={!!e} onClose={onClose} title={e?.description}>
@@ -177,7 +178,7 @@ function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
           </div>
           <div>
             <div className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted">{SPLIT_LABEL[e.splitType]}</div>
-            <div className="max-h-[40dvh] space-y-2 overflow-y-auto">
+            <div className="max-h-[26dvh] space-y-2 overflow-y-auto">
               {e.shares.map((sh) => (
                 <div key={sh.user.id} className="flex items-center gap-3 rounded-2xl bg-white/[0.07] px-3 py-2.5 ring-1 ring-white/10">
                   <Avatar user={sh.user} size={32} />
@@ -187,6 +188,7 @@ function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
               ))}
             </div>
           </div>
+          <Comments gid={gid} expenseId={e.id} />
           <div className="flex gap-3">
             <button type="button" onClick={() => onDelete(e)} className="flex-1 rounded-full glass-btn py-3.5 font-semibold text-neg">Delete</button>
             <button type="button" onClick={() => onEdit(e)} className="btn-accent flex-1 rounded-full py-3.5 font-bold">Edit</button>
