@@ -5,7 +5,7 @@ import type { ExpenseSnapshot, HistoryEntry, User } from './types'
 const me: User = { id: 1, email: 'a@x.com', name: 'Asha' }
 const bo: User = { id: 2, email: 'b@x.com', name: 'Bo' }
 const snap = (o: Partial<ExpenseSnapshot> = {}): ExpenseSnapshot => ({
-  description: 'Lunch', amountPaise: 60000, payer: me, splitType: 'EQUAL',
+  description: 'Lunch', amountPaise: 60000, payer: me, splitType: 'EQUAL', category: 'FOOD',
   shares: [{ user: me, amountPaise: 30000 }, { user: bo, amountPaise: 30000 }], ...o,
 })
 const entry = (o: Partial<HistoryEntry>): HistoryEntry => ({
@@ -18,6 +18,10 @@ describe('changes', () => {
     expect(changes(snap(), after, me)).toEqual([
       'name “Lunch” → “Big lunch”', 'amount ₹600.00 → ₹800.00', 'paid by you → bo', 'who owes what',
     ])
+  })
+  it('names a category change, and treats a missing one as Other', () => {
+    expect(changes(snap(), snap({ category: 'TRAVEL' }), me)).toEqual(['category Food → Travel'])
+    expect(changes({ ...snap(), category: undefined as never }, snap({ category: 'OTHER' }), me)).toEqual([])
   })
   it('is empty when nothing visible differs', () => expect(changes(snap(), snap(), me)).toEqual([]))
 })

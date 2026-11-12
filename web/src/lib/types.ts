@@ -23,6 +23,7 @@ export interface ActivityItem {
 }
 
 export type SplitType = 'EQUAL' | 'EXACT' | 'PERCENT' | 'SHARES'
+export type ExpenseCategory = 'FOOD' | 'GROCERIES' | 'TRAVEL' | 'STAY' | 'UTILITIES' | 'ENTERTAINMENT' | 'SHOPPING' | 'OTHER'
 export interface Share { user: User; amountPaise: number }
 export interface Expense {
   id: number
@@ -32,11 +33,15 @@ export interface Expense {
   createdBy: User
   createdAt: string
   splitType: SplitType
+  category: ExpenseCategory
   shares: Share[]
 }
 export interface Settlement { id: number; fromUser: User; toUser: User; amountPaise: number; createdAt: string }
 export type HistoryAction = 'CREATED' | 'EDITED' | 'DELETED' | 'RESTORED' | 'REVERTED'
-export interface ExpenseSnapshot { description: string; amountPaise: number; payer: User; splitType: SplitType; shares: Share[] }
+export interface ExpenseSnapshot { description: string; amountPaise: number; payer: User; splitType: SplitType; category: ExpenseCategory; shares: Share[] }
+/** `mySharePaise` is the part of the category's spending that falls on the signed-in user. */
+export interface CategoryTotal { category: ExpenseCategory; totalPaise: number; count: number; mySharePaise: number }
+export interface SpendingSummary { totalPaise: number; mySharePaise: number; categories: CategoryTotal[] }
 /** One change to an expense; `before` is null for a creation and `after` for a deletion. */
 export interface HistoryEntry {
   id: number
@@ -72,5 +77,6 @@ export interface ExpenseBody {
   amountPaise: number
   payerId: number
   splitType: SplitType
+  category?: ExpenseCategory
   splits: SplitInput[]
 }

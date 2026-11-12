@@ -81,6 +81,7 @@ class HistoryLog {
             return null;
         }
         return new SnapshotDto(s.description(), s.amountPaise(), person(people, s.payerId()), s.splitType(),
+                s.category() == null ? ExpenseCategory.OTHER : s.category(), 
                 s.shares().stream().map(sh -> new ShareDto(person(people, sh.userId()), sh.amountPaise())).toList());
     }
 

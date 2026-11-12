@@ -46,6 +46,9 @@ class Expense {
     @Enumerated(EnumType.STRING)
     private SplitType splitType;
 
+    @Enumerated(EnumType.STRING)
+    private ExpenseCategory category = ExpenseCategory.OTHER;
+
     @OneToMany(mappedBy = "expense", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExpenseShare> shares = new ArrayList<>();
 
@@ -89,13 +92,21 @@ class Expense {
         return splitType;
     }
 
+    ExpenseCategory getCategory() {
+        return category;
+    }
+
     List<ExpenseShare> getShares() {
         return Collections.unmodifiableList(shares);
     }
 
-    /** Replaces everything the expense says about who paid and who owes what. */
-    void revise(String description, long amountPaise, AppUser payer, SplitType splitType, Map<AppUser, Long> owed) {
+    /** Replaces everything the expense says about who paid and who owes what. A null category leaves the current one. */
+    void revise(String description, long amountPaise, AppUser payer, SplitType splitType, ExpenseCategory category,
+                Map<AppUser, Long> owed) {
         this.description = description.trim();
+        if (category != null) {
+            this.category = category;
+        }
         this.amountPaise = amountPaise;
         this.payer = payer;
         this.splitType = splitType;

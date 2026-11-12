@@ -1,12 +1,16 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { CATEGORIES } from '../lib/categories'
+import { suggestCategory } from '../lib/suggestCategory'
+import { keys } from '../lib/queries'
 import { useIdempotencyKey } from '../lib/idempotency'
 import { useRefreshGroups } from '../lib/mutations'
 import { hundredthsToInput, parseHundredths } from '../lib/money'
 import { evaluateSplit } from '../lib/splits'
-import { label, type Expense, type GroupDetail, type SplitType, type User } from '../lib/types'
+import { label, type Expense, type ExpenseCategory, type GroupData, type GroupDetail, type SplitType, type User } from '../lib/types'
 import {
   Avatar, ConfirmButton, Dashed, ErrorRetry, Field, Icon, PillTabs, RoundButton, Screen, SectionTitle, Spinner, TopBar,
   inputCls, tap, useAsync, useFeedback,
@@ -54,6 +58,14 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   )
 
   const [description, setDescription] = useState(expense?.description ?? '')
+  // a new expense starts with none picked (the server files it under Other); an edit that picks nothing keeps the current one
+  const [category, setCategory] = useState<ExpenseCategory | null>(expense?.category ?? null)
+  // true until the person taps a chip themselves: from then on their choice is never changed under them
+  const [auto, setAuto] = useState(!expense)
+  const qc = useQueryClient()
+  const chips = useRef<HTMLDivElement>(null)
+  // reopening an expense in a category that is off to the right: bring the chosen chip into view once
+  useEffect(() => { chips.current?.querySelector('[aria-pressed="true"]')?.scrollIntoView({ inline: 'center', block: 'nearest' }) }, [])
   const [amount, setAmount] = useState(expense ? hundredthsToInput(expense.amountPaise) : '')
   const [payerId, setPayerId] = useState(expense?.payer.id ?? me.id)
   const [selected, setSelected] = useState<Set<number>>(
@@ -86,10 +98,19 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
   }
   const toggle = (id: number) => { tap(); setSelected((s) => { const n = new Set(s); n.has(id) ? n.delete(id) : n.add(id); return n }) }
 
+  /** While the person has not chosen a category, keep it in step with what they type (a suggestion, never an overwrite). */
+  function onDescription(text: string) {
+    setDescription(text)
+    if (!auto) return
+    // this group's earlier expenses, if its screen was opened first (they are already in the cache: no extra request)
+    const earlier = qc.getQueryData<GroupData>(keys.group(me.id, group.id))?.expenses ?? []
+    setCategory(suggestCategory(text, earlier)?.category ?? null)
+  }
+
   async function save() {
     if (!result.splits) return
     setBusy(true)
-    const body = { description: description.trim(), amountPaise: parseHundredths(amount)!, payerId, splitType: kind, splits: result.splits }
+    const body = { description: description.trim(), amountPaise: parseHundredths(amount)!, payerId, splitType: kind, category: category ?? undefined, splits: result.splits }
     try {
       if (expense) await api.updateExpense(group.id, expense.id, body)
       else await api.addExpense(group.id, body, createKey.keyFor(body))
@@ -129,7 +150,19 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
           </Dashed>
 
           <Field label="What was it for?">
-            <input className={inputCls} autoCapitalize="sentences" value={description} onChange={(e) => setDescription(e.target.value)} />
+            <input className={inputCls} autoCapitalize="sentences" value={description} onChange={(e) => onDescription(e.target.value)} />
+          </Field>
+
+          <Field label="Category">
+            <div ref={chips} className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+              {CATEGORIES.map((c) => (
+                <button key={c.id} type="button" aria-pressed={category === c.id} onClick={() => { tap(); setAuto(false); setCategory(c.id) }}
+                  className={`shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold ring-1 ring-white/10 ${category === c.id ? 'btn-accent' : 'glass-btn'}`}>
+                  {c.emoji} {c.label}
+                </button>
+              ))}
+            </div>
+            {auto && category && <p className="mt-1.5 px-1 text-[12px] text-muted">✨ Suggested from the description. Tap a category to change it.</p>}
           </Field>
 
           <Field label="Paid by">

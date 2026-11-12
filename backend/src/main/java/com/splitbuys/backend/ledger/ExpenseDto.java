@@ -6,10 +6,10 @@ import java.time.Instant;
 import java.util.List;
 
 public record ExpenseDto(Long id, String description, long amountPaise, UserDto payer, UserDto createdBy,
-                         Instant createdAt, SplitType splitType, List<ShareDto> shares) {
+                         Instant createdAt, SplitType splitType, ExpenseCategory category, List<ShareDto> shares) {
     static ExpenseDto from(Expense e) {
         return new ExpenseDto(e.getId(), e.getDescription(), e.getAmountPaise(), UserDto.from(e.getPayer()),
-                UserDto.from(e.getCreatedBy()), e.getCreatedAt(), e.getSplitType(),
+                UserDto.from(e.getCreatedBy()), e.getCreatedAt(), e.getSplitType(), e.getCategory(),
                 e.getShares().stream().map(s -> new ShareDto(UserDto.from(s.getUser()), s.getAmountPaise())).toList());
     }
 }

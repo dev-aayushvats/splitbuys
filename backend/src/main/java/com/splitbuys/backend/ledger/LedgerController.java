@@ -25,8 +25,10 @@ class LedgerController {
     private final LedgerService ledger;
     private final BalanceService balances;
     private final ReminderService reminders;
+    private final SpendingService spending;
 
-    LedgerController(LedgerService ledger, BalanceService balances, ReminderService reminders) {
+    LedgerController(LedgerService ledger, BalanceService balances, ReminderService reminders, SpendingService spending) {
+        this.spending = spending;
         this.ledger = ledger;
         this.balances = balances;
         this.reminders = reminders;
@@ -67,6 +69,11 @@ class LedgerController {
     @PostMapping("/reminders")
     ReminderDto remind(@CurrentUser long userId, @PathVariable long groupId, @Valid @RequestBody ReminderRequest req) {
         return reminders.remind(groupId, userId, req.toUserId());
+    }
+
+    @GetMapping("/summary")
+    SpendingSummary summary(@CurrentUser long userId, @PathVariable long groupId) {
+        return spending.summary(groupId, userId);
     }
 
     @GetMapping("/history")

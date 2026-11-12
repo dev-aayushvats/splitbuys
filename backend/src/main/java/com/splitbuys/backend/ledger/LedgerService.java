@@ -181,7 +181,7 @@ public class LedgerService {
                 "Someone in this expense has left the group, so it cannot be restored"));
         Map<AppUser, Long> owed = new LinkedHashMap<>();
         s.shares().forEach(sh -> owed.put(who.apply(sh.userId()), sh.amountPaise()));
-        expense.revise(s.description(), s.amountPaise(), who.apply(s.payerId()), s.splitType(), owed);
+        expense.revise(s.description(), s.amountPaise(), who.apply(s.payerId()), s.splitType(), s.category(), owed);
     }
 
     @Transactional(readOnly = true)
@@ -270,7 +270,7 @@ public class LedgerService {
         }
         Map<AppUser, Long> owed = new LinkedHashMap<>();
         owedById.forEach((id, paise) -> owed.put(member(group, id), paise));
-        expense.revise(req.description(), req.amountPaise(), member(group, req.payerId()), req.splitType(), owed);
+        expense.revise(req.description(), req.amountPaise(), member(group, req.payerId()), req.splitType(), req.category(), owed);
     }
 
     /** Converts the client's value into the unit SplitCalculator expects (paise / basis points / weight). */
