@@ -78,3 +78,13 @@ export function useExpenseSearch(gid: number, filter: SearchFilter, enabled: boo
     enabled,
   })
 }
+
+/** The notes on one expense. Keyed under the group, so anything that refreshes the group refreshes them. Only fetched while the expense is open. */
+export function useComments(gid: number, expenseId: number | undefined) {
+  const uid = useAuth().user!.id
+  return useQuery({
+    queryKey: [...keys.group(uid, gid), 'comments', expenseId] as const,
+    queryFn: () => api.comments(gid, expenseId!),
+    enabled: expenseId !== undefined,
+  })
+}

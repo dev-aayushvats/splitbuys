@@ -199,6 +199,17 @@ parameter in a LIKE or IN is typed differently by PostgreSQL and SQLite). With a
 confined to one group (or the user's groups); SQLite's `lower()` only folds ASCII, so non-ASCII case-insensitivity is exact on
 PostgreSQL but not on local SQLite. If groups grow large, a trigram index (`pg_trgm`) is the next step.
 
+## Expense comments
+
+Members leave short notes on an expense: `GET` and `POST /groups/{id}/expenses/{id}/comments`, `DELETE /groups/{id}/comments/{id}`
+(`ledger.CommentService`). Any member reads and writes; only the author deletes their own (others get 400). Notes are plain text,
+trimmed, 1 to 500 characters, at most 200 per expense (409 `COMMENT_LIMIT`) and 100 per person per 24 hours (429), so the feature
+cannot be used to fill the database. A thread is returned oldest first, capped at the newest 200. `expense_comment.expense_id` is
+deliberately not a foreign key: undoing a deletion creates the expense again with a new id, and `LedgerService.undo` moves its
+comments to that id, so a note is not lost to a mis-tap; while an expense is deleted its comments cannot be listed (the
+expense must exist in the group). Comments are removed with their group (`NetBalances.purge`) and are in database backups. A
+deleted account's notes stay, shown under the erased name, like its expenses. No notification is sent for a note yet.
+
 ## Spending insights
 
 `GET /api/v1/me/spending` (`ledger.InsightsService`) returns the caller's own share of expenses for the last six months, oldest first,

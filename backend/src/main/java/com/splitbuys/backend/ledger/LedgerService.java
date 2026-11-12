@@ -43,10 +43,12 @@ public class LedgerService {
     private final ApplicationEventPublisher events;
     private final ExpenseHistoryRepository historyRows;
     private final HistoryLog history;
+    private final ExpenseCommentRepository commentRows;
 
     LedgerService(GroupService groups, UserService users, ExpenseRepository expenses, SettlementRepository settlements,
                   IdempotencyService idempotency, ApplicationEventPublisher events, ExpenseHistoryRepository historyRows,
-                  HistoryLog history) {
+                  HistoryLog history, ExpenseCommentRepository commentRows) {
+        this.commentRows = commentRows;
         this.historyRows = historyRows;
         this.history = history;
         this.idempotency = idempotency;
@@ -169,6 +171,7 @@ public class LedgerService {
                 apply(expense, group, target);
                 Expense saved = expenses.save(expense);
                 row.markRestoredAs(saved.getId());
+                commentRows.moveToExpense(groupId, row.getExpenseId(), saved.getId());
                 made = history.record(group, saved.getId(), HistoryAction.RESTORED, actor, null, ExpenseSnapshot.of(saved));
             }
             default -> throw new InvalidRequestException("Only an edit or a deletion can be undone");

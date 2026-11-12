@@ -26,8 +26,11 @@ class LedgerController {
     private final BalanceService balances;
     private final ReminderService reminders;
     private final SpendingService spending;
+    private final CommentService comments;
 
-    LedgerController(LedgerService ledger, BalanceService balances, ReminderService reminders, SpendingService spending) {
+    LedgerController(LedgerService ledger, BalanceService balances, ReminderService reminders, SpendingService spending,
+                     CommentService comments) {
+        this.comments = comments;
         this.spending = spending;
         this.ledger = ledger;
         this.balances = balances;
@@ -66,6 +69,24 @@ class LedgerController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void deleteExpense(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long expenseId) {
         ledger.deleteExpense(groupId, expenseId, userId);
+    }
+
+    @GetMapping("/expenses/{expenseId}/comments")
+    java.util.List<CommentDto> comments(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long expenseId) {
+        return comments.list(groupId, expenseId, userId);
+    }
+
+    @PostMapping("/expenses/{expenseId}/comments")
+    @ResponseStatus(HttpStatus.CREATED)
+    CommentDto addComment(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long expenseId,
+                          @Valid @RequestBody CommentRequest req) {
+        return comments.add(groupId, expenseId, userId, req.text());
+    }
+
+    @DeleteMapping("/comments/{commentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void deleteComment(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long commentId) {
+        comments.delete(groupId, commentId, userId);
     }
 
     @PostMapping("/reminders")
