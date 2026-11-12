@@ -50,7 +50,7 @@ export function DeleteAccountSheet({ open, onClose, email }: { open: boolean; on
         <div className="flex gap-3">
           <button type="button" onClick={close} disabled={busy} className="glass-btn flex-1 rounded-full py-3.5 font-semibold">Cancel</button>
           <button type="submit" disabled={!emailMatches(typed, email) || busy}
-            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-neg py-3.5 font-bold text-white disabled:opacity-40">
+            className="flex flex-1 items-center justify-center gap-2 rounded-full bg-neg py-3.5 font-bold text-[#fff] disabled:opacity-40">
             {busy && <Spinner className="size-4" />} Delete account
           </button>
         </div>

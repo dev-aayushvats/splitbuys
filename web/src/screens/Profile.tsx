@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
+import { savedChoice, setThemeChoice, type ThemeChoice } from '../lib/theme'
 import { label } from '../lib/types'
 import { useQueuedExpenses } from '../lib/useOutbox'
 import { isValidUpi, normalizeUpi } from '../lib/upi'
@@ -74,6 +75,7 @@ export function ProfileScreen() {
           </form>
 
           <NotificationsRow />
+          <AppearanceRow />
         </div>
         {upiInvalid
           ? <p className="px-2 text-[13px] text-neg">That doesn't look like a UPI ID, like name@bank</p>
@@ -98,4 +100,22 @@ export function ProfileScreen() {
 /** Appears only when there is something to save, so a form with nothing to do has no button to ignore. */
 function SaveButton({ busy }: { busy: boolean }) {
   return <button type="submit" disabled={busy} className="btn-accent h-9 shrink-0 rounded-full px-4 text-[13px] font-bold disabled:opacity-60">{busy ? '…' : 'Save'}</button>
+}
+
+const THEMES: { id: ThemeChoice; label: string }[] = [{ id: 'system', label: 'Auto' }, { id: 'light', label: 'Light' }, { id: 'dark', label: 'Dark' }]
+
+/** Auto follows the phone's setting; Light and Dark override it on this device. */
+function AppearanceRow() {
+  const [choice, setChoice] = useState(savedChoice)
+  return (
+    <div className="flex items-center gap-3 px-4 py-2.5">
+      <span className="w-16 shrink-0 text-[13px] text-muted">Theme</span>
+      <div className="flex flex-1 gap-1 rounded-full bg-white/[0.07] p-1 ring-1 ring-white/10">
+        {THEMES.map((t) => (
+          <button key={t.id} type="button" aria-pressed={choice === t.id} onClick={() => { setChoice(t.id); setThemeChoice(t.id) }}
+            className={`flex-1 rounded-full py-1.5 text-[13px] font-semibold ${choice === t.id ? 'btn-accent' : 'text-muted'}`}>{t.label}</button>
+        ))}
+      </div>
+    </div>
+  )
 }

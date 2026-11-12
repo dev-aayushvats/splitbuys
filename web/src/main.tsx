@@ -8,7 +8,10 @@ import { App } from './App'
 import { ErrorBoundary } from './ErrorBoundary'
 import { AuthProvider } from './lib/auth'
 import { persistOptions, queryClient } from './lib/queryClient'
+import { startTheme } from './lib/theme'
 import { FeedbackProvider } from './ui'
+
+startTheme()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

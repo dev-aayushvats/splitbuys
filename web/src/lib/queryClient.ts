@@ -1,6 +1,7 @@
 import { QueryClient } from '@tanstack/react-query'
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister'
 import { outbox } from './outbox'
+import { THEME_KEY } from './theme'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -26,10 +27,15 @@ export const persistOptions = {
   dehydrateOptions: { shouldDehydrateQuery: (q: { state: { status: string }; meta?: Record<string, unknown> }) => q.state.status === 'success' && q.meta?.persist === true },
 }
 
-/** Everything the app keeps on this device: cached data, the sign-in token, the persisted cache. Called on sign-out. */
+/** Everything the app keeps on this device: cached data, the sign-in token, the persisted cache (but not the theme setting). Called on sign-out. */
 export function wipeLocalData() {
   void queryClient.cancelQueries() // an in-flight response must not repopulate the cache we are about to empty
   queryClient.clear()
   outbox().clear()
-  try { localStorage.clear(); sessionStorage.clear() } catch { /* storage unavailable (private mode) */ }
+  try {
+    // the theme is a setting of this device, not data of the person who signed out
+    const theme = localStorage.getItem(THEME_KEY)
+    localStorage.clear(); sessionStorage.clear()
+    if (theme) localStorage.setItem(THEME_KEY, theme)
+  } catch { /* storage unavailable (private mode) */ }
 }
