@@ -28,7 +28,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   const shown = last.current
   return createPortal(
     // biome-ignore lint/a11y/noStaticElementInteractions: clicking the backdrop is a mouse convenience; Escape (handled above) is the keyboard way to close
-    <div className={`${open ? 'animate-fade' : 'animate-fade-out pointer-events-none'} fixed inset-0 z-50 flex items-end justify-center bg-black/45 backdrop-blur-[6px]`}
+    <div className={`${open ? 'animate-fade' : 'animate-fade-out pointer-events-none'} fixed inset-0 z-50 flex items-end justify-center scrim-dim backdrop-blur-[6px]`}
       role="presentation" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div role="dialog" aria-modal="true"
         onTouchStart={(e) => { from.current = e.touches[0].clientY }}
