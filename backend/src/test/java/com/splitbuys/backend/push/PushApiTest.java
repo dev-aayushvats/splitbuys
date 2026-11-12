@@ -267,6 +267,86 @@ class PushApiTest extends ApiTest {
         assertEquals(0, subscriptions.findByUserIdIn(List.of(a.userId())).size());
     }
 
+    // ---- reminders ----
+
+    private void owes(long g, Session payer, Session debtor, long paise) throws Exception {
+        // payer paid the whole bill, so the debtor owes them everything. Call this BEFORE anyone subscribes, so the
+        // expense itself notifies nobody and the test sees only the reminder.
+        expense(payer, g, "Dinner", paise, null, payer.userId(), debtor.userId());
+    }
+
+    @Test
+    void aReminderReachesOnlyThePersonWhoOwes() throws Exception {
+        Session asha = signIn("Asha"), ben = signIn("Ben"), chi = signIn("Chi");
+        long g = groupOf(asha, ben, chi);
+        owes(g, asha, ben, 25000);
+        subscribe(ben, newEndpoint());
+        subscribe(chi, newEndpoint());
+
+        post("/api/v1/groups/" + g + "/reminders", asha, "{\"toUserId\":" + ben.userId() + "}")
+                .andExpect(status().isOk()).andExpect(jsonPath("$.delivered", is(true)))
+                .andExpect(jsonPath("$.amountPaise", is(25000))).andExpect(jsonPath("$.nextAllowedAt").exists());
+        var sent = awaitSent(1);
+        assertTrue(sent.get(0).message().contains("Asha reminded you"), sent.get(0).message());
+        assertTrue(sent.get(0).message().contains("250"), sent.get(0).message());
+    }
+
+    @Test
+    void aSecondReminderToTheSamePersonTheSameDayIsRefused() throws Exception {
+        Session asha = signIn("Asha"), ben = signIn("Ben");
+        long g = groupOf(asha, ben);
+        owes(g, asha, ben, 10000);
+        subscribe(ben, newEndpoint());
+        String body = "{\"toUserId\":" + ben.userId() + "}";
+
+        post("/api/v1/groups/" + g + "/reminders", asha, body).andExpect(status().isOk());
+        post("/api/v1/groups/" + g + "/reminders", asha, body).andExpect(status().isTooManyRequests());
+        awaitSent(1);
+    }
+
+    @Test
+    void youCannotRemindSomeoneWhoDoesNotOweYouOrYourself() throws Exception {
+        Session asha = signIn("Asha"), ben = signIn("Ben");
+        long g = groupOf(asha, ben);
+        owes(g, asha, ben, 10000);
+        subscribe(ben, newEndpoint());
+        subscribe(asha, newEndpoint());
+
+        // the debt runs the other way
+        post("/api/v1/groups/" + g + "/reminders", ben, "{\"toUserId\":" + asha.userId() + "}")
+                .andExpect(status().isConflict()).andExpect(jsonPath("$.code", is("NOTHING_OWED")));
+        post("/api/v1/groups/" + g + "/reminders", asha, "{\"toUserId\":" + asha.userId() + "}").andExpect(status().isBadRequest());
+        post("/api/v1/groups/" + g + "/reminders", asha, "{}").andExpect(status().isBadRequest());
+        awaitSent(0);
+    }
+
+    @Test
+    void outsidersCannotSendRemindersAndAPairNeedsToShareTheGroup() throws Exception {
+        Session asha = signIn("Asha"), ben = signIn("Ben"), omar = signIn("Omar");
+        long g = groupOf(asha, ben);
+        owes(g, asha, ben, 10000);
+        subscribe(ben, newEndpoint());
+        post("/api/v1/groups/" + g + "/reminders", omar, "{\"toUserId\":" + ben.userId() + "}").andExpect(status().isNotFound());
+        post("/api/v1/groups/" + g + "/reminders", asha, "{\"toUserId\":" + omar.userId() + "}").andExpect(status().isBadRequest());
+        awaitSent(0);
+    }
+
+    @Test
+    void ifThePersonHasNoDeviceNothingIsSentAndNoCooldownIsUsedUp() throws Exception {
+        Session asha = signIn("Asha"), ben = signIn("Ben");
+        long g = groupOf(asha, ben);
+        owes(g, asha, ben, 10000);
+        String body = "{\"toUserId\":" + ben.userId() + "}";
+
+        post("/api/v1/groups/" + g + "/reminders", asha, body).andExpect(status().isOk())
+                .andExpect(jsonPath("$.delivered", is(false))).andExpect(jsonPath("$.amountPaise", is(10000)));
+        awaitSent(0);
+
+        subscribe(ben, newEndpoint());
+        post("/api/v1/groups/" + g + "/reminders", asha, body).andExpect(status().isOk()).andExpect(jsonPath("$.delivered", is(true)));
+        awaitSent(1);
+    }
+
     private org.springframework.test.web.servlet.ResultActions delete(String url, Session as, String json) throws Exception {
         return send(org.springframework.http.HttpMethod.DELETE, url, as, json);
     }
