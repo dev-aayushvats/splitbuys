@@ -16,10 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 class NetBalances implements LedgerPort {
     private final ExpenseRepository expenses;
     private final SettlementRepository settlements;
+    private final ExpenseHistoryRepository history;
 
-    NetBalances(ExpenseRepository expenses, SettlementRepository settlements) {
+    NetBalances(ExpenseRepository expenses, SettlementRepository settlements, ExpenseHistoryRepository history) {
         this.expenses = expenses;
         this.settlements = settlements;
+        this.history = history;
     }
 
     @Override
@@ -44,6 +46,7 @@ class NetBalances implements LedgerPort {
     @Override
     @Transactional
     public void purge(long groupId) {
+        history.deleteByGroupId(groupId);
         expenses.deleteAll(expenses.findByGroup_Id(groupId));
         settlements.deleteAll(settlements.findByGroup_Id(groupId));
     }

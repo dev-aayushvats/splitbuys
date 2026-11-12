@@ -6,6 +6,7 @@ import { dayLabel, formatDate, formatPaise } from '../../lib/money'
 import { mergeTimeline } from '../../lib/timeline'
 import { label, type Expense, type GroupData, type Settlement, type User } from '../../lib/types'
 import { Avatar, EmptyState, IconBadge, Sheet, Tile, useFeedback } from '../../ui'
+import { HistorySheet } from './HistorySheet'
 import { who } from './shared'
 
 export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
@@ -15,6 +16,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
   const deleteExpense = useDeleteExpense(gid)
   const deleteSettlement = useDeleteSettlement(gid)
   const [detail, setDetail] = useState<Expense | null>(null)
+  const [showHistory, setShowHistory] = useState(false)
 
   // First page comes with the group data; "Load more" appends older pages. A reload (after any change) starts over.
   const [older, setOlder] = useState<{ expenses: Expense[]; settlements: Settlement[]; eCursor: string | null; sCursor: string | null } | null>(null)
@@ -101,6 +103,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
           setDetail(null)
           deleteExpense.mutate(e.id)
         }} />
+      <HistorySheet gid={gid} me={me} open={showHistory} onClose={() => setShowHistory(false)} />
       {days.map((d) => (
         <section key={d.day}>
           <h3 className="mb-2 px-1 text-xs font-semibold uppercase tracking-wider text-muted">{d.day}</h3>
@@ -113,6 +116,9 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
           {loadingMore ? 'Loading…' : 'Load older'}
         </button>
       )}
+      <button type="button" onClick={() => setShowHistory(true)} className="w-full py-2 text-[13px] font-semibold text-muted">
+        Recent changes and undo
+      </button>
     </div>
   )
 }

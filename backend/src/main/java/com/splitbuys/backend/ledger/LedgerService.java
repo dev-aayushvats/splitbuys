@@ -1,5 +1,6 @@
 package com.splitbuys.backend.ledger;
 
+import com.splitbuys.backend.common.error.ConflictException;
 import com.splitbuys.backend.common.error.InvalidRequestException;
 import com.splitbuys.backend.common.error.NotFoundException;
 import com.splitbuys.backend.common.idempotency.IdempotencyService;
@@ -15,6 +16,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,9 +41,14 @@ public class LedgerService {
     private final SettlementRepository settlements;
     private final IdempotencyService idempotency;
     private final ApplicationEventPublisher events;
+    private final ExpenseHistoryRepository historyRows;
+    private final HistoryLog history;
 
     LedgerService(GroupService groups, UserService users, ExpenseRepository expenses, SettlementRepository settlements,
-                  IdempotencyService idempotency, ApplicationEventPublisher events) {
+                  IdempotencyService idempotency, ApplicationEventPublisher events, ExpenseHistoryRepository historyRows,
+                  HistoryLog history) {
+        this.historyRows = historyRows;
+        this.history = history;
         this.idempotency = idempotency;
         this.events = events;
         this.groups = groups;
@@ -74,7 +82,9 @@ public class LedgerService {
         AppUser actor = users.require(userId);
         Expense expense = new Expense(group, actor);
         revise(expense, group, req);
-        ExpenseDto saved = ExpenseDto.from(expenses.save(expense));
+        Expense persisted = expenses.save(expense);
+        history.record(group, persisted.getId(), HistoryAction.CREATED, actor, null, ExpenseSnapshot.of(persisted));
+        ExpenseDto saved = ExpenseDto.from(persisted);
         Map<Long, Long> shares = new LinkedHashMap<>();
         saved.shares().forEach(s -> shares.put(s.user().id(), s.amountPaise()));
         events.publishEvent(new ExpenseAdded(groupId, group.getName(), userId, label(actor), saved.id(), saved.description(),
@@ -85,13 +95,93 @@ public class LedgerService {
     public ExpenseDto updateExpense(long groupId, long expenseId, long userId, ExpenseRequest req) {
         ExpenseGroup group = groups.requireMember(groupId, userId);
         Expense expense = expense(groupId, expenseId);
+        ExpenseSnapshot before = ExpenseSnapshot.of(expense);
         revise(expense, group, req);
+        ExpenseSnapshot after = ExpenseSnapshot.of(expense);
+        if (!before.equals(after)) { // saving without changing anything is not worth a history entry
+            history.record(group, expenseId, HistoryAction.EDITED, users.require(userId), before, after);
+        }
         return ExpenseDto.from(expense);
     }
 
     public void deleteExpense(long groupId, long expenseId, long userId) {
+        ExpenseGroup group = groups.requireMember(groupId, userId);
+        Expense expense = expense(groupId, expenseId);
+        history.record(group, expenseId, HistoryAction.DELETED, users.require(userId), ExpenseSnapshot.of(expense), null);
+        expenses.delete(expense);
+    }
+
+    /** Every change to the group's expenses, newest first. */
+    @Transactional(readOnly = true)
+    public PageResponse<HistoryDto> listHistory(long groupId, long userId, int limit, String cursor) {
         groups.requireMember(groupId, userId);
-        expenses.delete(expense(groupId, expenseId));
+        PageResponse<ExpenseHistory> rows = page(limit, cursor,
+                size -> historyRows.firstPageIds(groupId, size),
+                (c, size) -> historyRows.idsAfter(groupId, c.createdAt(), c.id(), size),
+                historyRows::findByIdIn, ExpenseHistory::getId, ExpenseHistory::getCreatedAt, Function.identity());
+        return new PageResponse<>(describe(groupId, rows.items()), rows.nextCursor());
+    }
+
+    /** The changes to one expense (at most the newest 50), including an expense that has since been deleted. */
+    @Transactional(readOnly = true)
+    public List<HistoryDto> expenseHistory(long groupId, long expenseId, long userId) {
+        groups.requireMember(groupId, userId);
+        return describe(groupId, historyRows.findTop50ByGroup_IdAndExpenseIdOrderByIdDesc(groupId, expenseId));
+    }
+
+    private List<HistoryDto> describe(long groupId, List<ExpenseHistory> rows) {
+        Set<Long> live = new HashSet<>();
+        expenses.findAllById(rows.stream().map(ExpenseHistory::getExpenseId).distinct().toList())
+                .forEach(e -> live.add(e.getId()));
+        return history.toDtos(groupId, rows, live);
+    }
+
+    /**
+     * Undoes one change. An edit can be undone only while it is still the latest change to that expense (otherwise the
+     * undo would silently throw away a later edit); a deletion can be undone once, which creates the expense again.
+     */
+    public HistoryDto undo(long groupId, long historyId, long userId) {
+        ExpenseGroup group = groups.requireMember(groupId, userId);
+        AppUser actor = users.require(userId);
+        ExpenseHistory row = historyRows.findByIdAndGroup_Id(historyId, groupId)
+                .orElseThrow(() -> new NotFoundException("History entry not found"));
+        ExpenseHistory made;
+        switch (row.getAction()) {
+            case EDITED -> {
+                Expense expense = expenses.findByIdAndGroup_Id(row.getExpenseId(), groupId).orElseThrow(
+                        () -> new ConflictException("EXPENSE_GONE", "This expense has since been deleted"));
+                ExpenseHistory newest = historyRows.findTop50ByGroup_IdAndExpenseIdOrderByIdDesc(groupId, row.getExpenseId()).get(0);
+                if (!newest.getId().equals(row.getId())) {
+                    throw new ConflictException("CHANGED_SINCE", "This expense was changed again after this edit, so it cannot be undone");
+                }
+                ExpenseSnapshot target = HistoryLog.before(row);
+                ExpenseSnapshot current = ExpenseSnapshot.of(expense);
+                apply(expense, group, target);
+                made = history.record(group, expense.getId(), HistoryAction.REVERTED, actor, current, target);
+            }
+            case DELETED -> {
+                if (row.getRestoredAs() != null) {
+                    throw new ConflictException("ALREADY_RESTORED", "This expense has already been restored");
+                }
+                ExpenseSnapshot target = HistoryLog.before(row);
+                Expense expense = new Expense(group, actor);
+                apply(expense, group, target);
+                Expense saved = expenses.save(expense);
+                row.markRestoredAs(saved.getId());
+                made = history.record(group, saved.getId(), HistoryAction.RESTORED, actor, null, ExpenseSnapshot.of(saved));
+            }
+            default -> throw new InvalidRequestException("Only an edit or a deletion can be undone");
+        }
+        return history.toDtos(groupId, List.of(made), Set.of(made.getExpenseId())).get(0);
+    }
+
+    /** Puts an expense back to a stored state, provided everyone in it is still in the group. */
+    private static void apply(Expense expense, ExpenseGroup group, ExpenseSnapshot s) {
+        Function<Long, AppUser> who = id -> group.findMember(id).orElseThrow(() -> new ConflictException("MEMBER_LEFT",
+                "Someone in this expense has left the group, so it cannot be restored"));
+        Map<AppUser, Long> owed = new LinkedHashMap<>();
+        s.shares().forEach(sh -> owed.put(who.apply(sh.userId()), sh.amountPaise()));
+        expense.revise(s.description(), s.amountPaise(), who.apply(s.payerId()), s.splitType(), owed);
     }
 
     @Transactional(readOnly = true)

@@ -29,6 +29,13 @@ public class UserService {
         return users.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
     }
 
+    /** Several users at once, keyed by id; ids that do not exist are simply absent. */
+    public java.util.Map<Long, AppUser> byIds(java.util.Collection<Long> ids) {
+        java.util.Map<Long, AppUser> found = new java.util.HashMap<>();
+        users.findAllById(ids).forEach(u -> found.put(u.getId(), u));
+        return found;
+    }
+
     public ProfileDto get(long id) {
         return ProfileDto.from(require(id));
     }

@@ -62,6 +62,23 @@ class LedgerController {
         ledger.deleteExpense(groupId, expenseId, userId);
     }
 
+    @GetMapping("/history")
+    PageResponse<HistoryDto> history(@CurrentUser long userId, @PathVariable long groupId,
+                                     @RequestParam(defaultValue = "" + PageCursor.DEFAULT_LIMIT) int limit,
+                                     @RequestParam(required = false) String cursor) {
+        return ledger.listHistory(groupId, userId, limit, cursor);
+    }
+
+    @GetMapping("/expenses/{expenseId}/history")
+    java.util.List<HistoryDto> expenseHistory(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long expenseId) {
+        return ledger.expenseHistory(groupId, expenseId, userId);
+    }
+
+    @PostMapping("/history/{historyId}/undo")
+    HistoryDto undo(@CurrentUser long userId, @PathVariable long groupId, @PathVariable long historyId) {
+        return ledger.undo(groupId, historyId, userId);
+    }
+
     @GetMapping("/settlements")
     PageResponse<SettlementDto> settlements(@CurrentUser long userId, @PathVariable long groupId,
                                             @RequestParam(defaultValue = "" + PageCursor.DEFAULT_LIMIT) int limit,
