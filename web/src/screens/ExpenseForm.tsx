@@ -238,3 +238,6 @@ function PersonRow({ user, name, selected, onToggle, field }: {
     </div>
   )
 }
+
+/** Exported for tests: the form itself, without the loading of the group. */
+export { Form as ExpenseForm }
