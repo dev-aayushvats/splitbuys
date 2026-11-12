@@ -7,7 +7,7 @@ const b: User = { id: 2, email: 'b@x.in', name: 'Ben' }
 // Asha paid 1000 split equally: Asha is owed 500, Ben owes 500. Ben has since paid Asha 100.
 const base = (): GroupData => ({
   group: { id: 9, name: 'Trip', inviteToken: 't', members: [a, b] },
-  expenses: [{ id: 10, description: 'Dinner', amountPaise: 1000, payer: a, createdBy: a, createdAt: '', splitType: 'EQUAL',
+  expenses: [{ id: 10, description: 'Dinner', amountPaise: 1000, payer: a, createdBy: a, createdAt: '', splitType: 'EQUAL', category: 'OTHER',
     shares: [{ user: a, amountPaise: 500 }, { user: b, amountPaise: 500 }] }],
   expensesCursor: null,
   settlements: [{ id: 20, fromUser: b, toUser: a, amountPaise: 100, createdAt: '' }],

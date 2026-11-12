@@ -1,3 +1,4 @@
+import { categoryLabel } from './categories'
 import { formatPaise } from './money'
 import { label, type HistoryEntry, type User } from './types'
 
@@ -9,6 +10,7 @@ export function changes(before: NonNullable<HistoryEntry['before']>, after: NonN
   if (before.description !== after.description) out.push(`name “${before.description}” → “${after.description}”`)
   if (before.amountPaise !== after.amountPaise) out.push(`amount ${formatPaise(before.amountPaise)} → ${formatPaise(after.amountPaise)}`)
   if (before.payer.id !== after.payer.id) out.push(`paid by ${who(before.payer, me).toLowerCase()} → ${who(after.payer, me).toLowerCase()}`)
+  if ((before.category ?? 'OTHER') !== (after.category ?? 'OTHER')) out.push(`category ${categoryLabel(before.category ?? 'OTHER')} → ${categoryLabel(after.category ?? 'OTHER')}`)
   if (before.splitType !== after.splitType) out.push('split method')
   const owed = (s: typeof before) => [...s.shares].sort((a, b) => a.user.id - b.user.id).map((s) => `${s.user.id}:${s.amountPaise}`).join()
   if (owed(before) !== owed(after)) out.push('who owes what')

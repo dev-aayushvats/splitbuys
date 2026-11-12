@@ -7,6 +7,7 @@ import { reminderMessage } from '../../lib/reminder'
 import { canPayViaUpi } from '../../lib/upi'
 import { label, type GroupData, type Transfer, type User } from '../../lib/types'
 import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Spinner, Tile, inputCls, useFeedback } from '../../ui'
+import { SpendingSection } from './SpendingSection'
 import { who } from './shared'
 
 /** `fresh`: the balances on screen have just been confirmed by the server, not merely remembered from an earlier visit. */
@@ -62,6 +63,8 @@ export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fr
           ))}
         </div>
       </section>
+
+      <SpendingSection gid={data.group.id} />
 
       <PaymentSheet transfer={paying} me={me} fresh={fresh} reminding={paying !== null && reminding === paying.from.id}
         onRemind={() => { if (paying) void remind(paying) }} onClose={() => setPayingPair(null)} onSubmit={async (paise) => {

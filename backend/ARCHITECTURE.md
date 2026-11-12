@@ -168,6 +168,16 @@ id, and the deletion row remembers which. If someone in the expense has since le
 `MEMBER_LEFT`). Creations cannot be undone (delete the expense instead). `undoable` on each entry tells the client whether undo
 would be accepted now. History is included in database backups.
 
+## Expense categories and spending summary
+
+Each expense has a `category` from a short fixed list (`ExpenseCategory`: food, groceries, travel, stay, utilities, entertainment,
+shopping, other), stored as a `varchar` with default `OTHER` so existing rows are valid. It is optional on a request: a new expense
+without one is `OTHER`, and an edit that omits it keeps the current one, so older clients cannot wipe it. It is part of the
+history snapshot, so a category change shows in the history and can be undone (snapshots written before categories existed read
+back as `OTHER`). `GET /groups/{id}/summary` (`ledger.SpendingService`) returns the group's spending by category, biggest first,
+with the caller's own share of each: two aggregate queries (totals, and the caller's shares), however many expenses there are.
+A fixed list is deliberate: free text fragments ("food", "Food ", "dinner") and cannot be summed.
+
 ## Payment reminders
 
 `POST /api/v1/groups/{id}/reminders` with `{toUserId}` nudges a member who owes the caller (`ledger.ReminderService`). It is allowed

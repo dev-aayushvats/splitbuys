@@ -20,7 +20,7 @@ const a: User = { id: 1, email: 'a@x.in', name: 'Asha' }
 const b: User = { id: 2, email: 'b@x.in', name: 'Ben' }
 const data: GroupData = {
   group: { id: 9, name: 'Trip', inviteToken: 't', members: [a, b] },
-  expenses: [{ id: 10, description: 'Dinner', amountPaise: 1000, payer: a, createdBy: a, createdAt: '', splitType: 'EQUAL',
+  expenses: [{ id: 10, description: 'Dinner', amountPaise: 1000, payer: a, createdBy: a, createdAt: '', splitType: 'EQUAL', category: 'OTHER',
     shares: [{ user: a, amountPaise: 500 }, { user: b, amountPaise: 500 }] }],
   expensesCursor: null, settlements: [], settlementsCursor: null,
   balances: { balances: [{ user: a, netPaise: 500 }, { user: b, netPaise: -500 }], totalSpentPaise: 1000, settleUp: [] },

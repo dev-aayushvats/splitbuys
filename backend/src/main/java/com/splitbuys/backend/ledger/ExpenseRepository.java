@@ -35,6 +35,13 @@ interface ExpenseRepository extends JpaRepository<Expense, Long> {
             + "from ExpenseShare s where s.expense.group.id in :groupIds group by s.expense.group.id, s.user.id")
     List<AmountByUser> owedTotals(Collection<Long> groupIds);
 
+    @Query("select e.category, sum(e.amountPaise), count(e) from Expense e where e.group.id = :groupId group by e.category")
+    List<Object[]> totalsByCategory(long groupId);
+
+    @Query("select e.category, sum(s.amountPaise) from ExpenseShare s join s.expense e "
+            + "where e.group.id = :groupId and s.user.id = :userId group by e.category")
+    List<Object[]> myShareByCategory(long groupId, long userId);
+
     @Query("select coalesce(sum(e.amountPaise), 0) from Expense e where e.group.id = :groupId")
     long totalSpent(long groupId);
 

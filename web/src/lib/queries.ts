@@ -9,6 +9,7 @@ export const keys = {
   friends: (uid: number) => ['u', uid, 'friends'] as const,
   group: (uid: number, gid: number) => ['u', uid, 'group', gid] as const,
   history: (uid: number, gid: number) => ['u', uid, 'group', gid, 'history'] as const,
+  summary: (uid: number, gid: number) => ['u', uid, 'group', gid, 'summary'] as const,
 }
 
 export function useGroups() {
@@ -19,6 +20,12 @@ export function useGroups() {
 export function useGroupData(gid: number) {
   const uid = useAuth().user!.id
   return useQuery({ queryKey: keys.group(uid, gid), queryFn: () => api.groupData(gid), meta: { persist: true } })
+}
+
+/** Where a group's money went, by category. Keyed under the group, so any write to the group refreshes it. */
+export function useSpending(gid: number) {
+  const uid = useAuth().user!.id
+  return useQuery({ queryKey: keys.summary(uid, gid), queryFn: () => api.summary(gid) })
 }
 
 /** A group's change history (edits, deletions, restores), a page at a time. Not kept on disk. */

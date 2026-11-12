@@ -7,7 +7,7 @@ const bo: User = { id: 2, email: 'b@x.in', name: 'Bo' }
 
 const expense = (over: Partial<ActivityItem> = {}, payer = me): ActivityItem => ({
   type: 'EXPENSE', id: 1, groupId: 9, groupName: 'Trip', createdAt: '2026-11-10T10:00:00Z', payment: null, myNetPaise: 0,
-  expense: { id: 1, description: 'Hotel', amountPaise: 300000, payer, createdBy: payer, createdAt: '', splitType: 'EQUAL', shares: [] },
+  expense: { id: 1, description: 'Hotel', amountPaise: 300000, payer, createdBy: payer, createdAt: '', splitType: 'EQUAL', category: 'OTHER', shares: [] },
   ...over,
 })
 const payment = (from: User, to: User): ActivityItem => ({

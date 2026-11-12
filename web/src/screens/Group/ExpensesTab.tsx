@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from '../../lib/api'
 import { useDeleteExpense, useDeleteSettlement } from '../../lib/mutations'
 import { dayLabel, formatDate, formatPaise } from '../../lib/money'
+import { categoryEmoji, categoryLabel } from '../../lib/categories'
 import { mergeTimeline } from '../../lib/timeline'
 import { label, type Expense, type GroupData, type Settlement, type User } from '../../lib/types'
 import { Avatar, EmptyState, IconBadge, Sheet, Tile, useFeedback } from '../../ui'
@@ -65,7 +66,7 @@ export function ExpensesTab({ data, me }: { data: GroupData; me: User }) {
     }
     return (
       <Tile key={`e${e.id}`} leading={<IconBadge icon="receipt" />} title={e.description}
-        subtitle={`${who(e.payer, me)} paid ${formatPaise(e.amountPaise)}`}
+        subtitle={`${who(e.payer, me)} paid ${formatPaise(e.amountPaise)}${e.category && e.category !== 'OTHER' ? ` · ${categoryLabel(e.category)}` : ''}`}
         trailing={<div className={`whitespace-pre-line text-right text-[13px] font-bold ${cls}`}>{note}</div>}
         onClick={() => setDetail(e)} />
     )
@@ -135,7 +136,7 @@ function ExpenseDetail({ expense: e, me, onClose, onEdit, onDelete }: {
           <div>
             <div className="text-3xl font-extrabold">{formatPaise(e.amountPaise)}</div>
             <div className="mt-1 text-[13px] text-muted">
-              {who(e.payer, me)} paid · {formatDate(e.createdAt)}
+              {categoryEmoji(e.category)} {categoryLabel(e.category)} · {who(e.payer, me)} paid · {formatDate(e.createdAt)}
               {e.createdBy.id !== e.payer.id && ` · added by ${who(e.createdBy, me)}`}
             </div>
           </div>
