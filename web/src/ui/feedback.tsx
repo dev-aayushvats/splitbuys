@@ -65,7 +65,7 @@ export function OfflineBanner() {
   if (online) return null
   return (
     <div role="alert" className="glass-strong animate-rise pointer-events-none fixed left-1/2 top-[calc(0.75rem+env(safe-area-inset-top))] z-[70] w-max max-w-[calc(100%-2rem)] -translate-x-1/2 rounded-full px-4 py-2 text-center text-[13px] font-semibold text-neg">
-      You're offline · changes won't save
+      You're offline · new expenses will sync later
     </div>
   )
 }

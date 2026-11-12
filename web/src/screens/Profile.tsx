@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useAuth } from '../lib/auth'
 import { label } from '../lib/types'
+import { useQueuedExpenses } from '../lib/useOutbox'
 import { isValidUpi, normalizeUpi } from '../lib/upi'
 import { DeleteAccountSheet } from './DeleteAccount'
 import { InsightsCard } from './InsightsCard'
@@ -11,6 +12,7 @@ export function ProfileScreen() {
   const { user, setName, setUpi, clearUpi, signOut } = useAuth()
   const { toast, confirm } = useFeedback()
   const me = user!
+  const unsent = useQueuedExpenses().length
   const [deleting, setDeleting] = useState(false)
   const [name, setNameText] = useState(me.name ?? '')
   const [busy, setBusy] = useState(false)
@@ -80,7 +82,7 @@ export function ProfileScreen() {
       </div>
 
       <div className="mt-auto px-5 pb-28 pt-8">
-        <button type="button" onClick={async () => { if (await confirm('Sign out of SplitBuys?', 'Sign out')) signOut() }}
+        <button type="button" onClick={async () => { if (await confirm(unsent > 0 ? `Sign out? ${unsent} expense${unsent === 1 ? '' : 's'} not yet synced will be lost.` : 'Sign out of SplitBuys?', 'Sign out')) signOut() }}
           className="glass-lite flex w-full items-center justify-center gap-2 rounded-full py-3 font-semibold text-neg">
           <Icon name="logout" size={18} /> Sign out
         </button>

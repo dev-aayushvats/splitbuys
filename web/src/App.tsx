@@ -2,6 +2,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { useAuth } from './lib/auth'
 import { Backdrop, OfflineBanner, Screen, Spinner } from './ui'
 import { PushSync } from './ui/PushSync'
+import { OutboxSync } from './ui/OutboxSync'
 import { GroupsScreen } from './screens/Groups'
 import { GroupScreen } from './screens/Group'
 import { JoinScreen } from './screens/Join'
@@ -27,7 +28,7 @@ function Gate({ page }: { page: 'login' | 'name' | 'app' }) {
   if (!user) return page === 'login' ? <Outlet /> : <Navigate to={withNext('/login')} replace />
   if (!hasName) return page === 'name' ? <Outlet /> : <Navigate to={withNext('/name')} replace />
   if (page !== 'app') return <Navigate to={next ?? '/'} replace />
-  return <><PushSync /><Outlet /></>
+  return <><PushSync /><OutboxSync /><Outlet /></>
 }
 
 export function App() {

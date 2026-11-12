@@ -8,6 +8,7 @@ import { suggestCategory } from '../lib/suggestCategory'
 import { keys } from '../lib/queries'
 import { useIdempotencyKey } from '../lib/idempotency'
 import { useOfferUndo, useRefreshGroups } from '../lib/mutations'
+import { isUnreachable, outbox } from '../lib/outbox'
 import { hundredthsToInput, parseHundredths } from '../lib/money'
 import { evaluateSplit } from '../lib/splits'
 import { label, type Expense, type ExpenseCategory, type GroupData, type GroupDetail, type SplitType, type User } from '../lib/types'
@@ -119,6 +120,14 @@ function Form({ group, expense }: { group: GroupDetail; expense: Expense | null 
       nav(-1)
       if (expense) offerUndo(group.id, expense.id, 'EDITED')
     } catch (e) {
+      // no connection: keep a new expense on this device and send it later, under the same key, so it cannot be created twice
+      if (!expense && isUnreachable(e)) {
+        outbox().enqueue({ key: createKey.keyFor(body), uid: me.id, gid: group.id, groupName: group.name, body })
+        createKey.done()
+        nav(-1)
+        toast('No connection. Saved on this device and will sync when you are back online.')
+        return
+      }
       setBusy(false)
       toast(e instanceof Error ? e.message : 'Something went wrong')
     }
