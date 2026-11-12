@@ -3,7 +3,8 @@ import { api } from '../../lib/api'
 import { useRecordPayment } from '../../lib/mutations'
 import { useIdempotencyKey } from '../../lib/idempotency'
 import { formatPaise, hundredthsToInput, parseHundredths } from '../../lib/money'
-import { reminderMessage } from '../../lib/reminder'
+import { reminderMessage, settleUpMessage } from '../../lib/reminder'
+import { shareText } from '../../lib/share'
 import { canPayViaUpi } from '../../lib/upi'
 import { label, type GroupData, type Transfer, type User } from '../../lib/types'
 import { Avatar, AvatarStack, Dashed, Field, Icon, PillButton, SectionTitle, Sheet, Spinner, Tile, inputCls, useFeedback } from '../../ui'
@@ -27,8 +28,9 @@ export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fr
       const r = await api.remind(data.group.id, t.from.id)
       if (r.delivered) { toast(`Reminder sent to ${label(t.from)}`); return }
       const text = reminderMessage(label(t.from), r.amountPaise, data.group.name)
-      if (navigator.share) { try { await navigator.share({ text }) } catch { /* the user closed the share sheet */ } return }
-      try { await navigator.clipboard.writeText(text); toast(`${label(t.from)} has no notifications on. Message copied: paste it in a chat`) } catch { toast('Could not copy the message') }
+      const shared = await shareText(text)
+      if (shared === 'copied') toast(`${label(t.from)} has no notifications on. Message copied: paste it in a chat`)
+      else if (shared === 'failed') toast('Could not copy the message')
     } catch (e) { toast(e instanceof Error ? e.message : 'Something went wrong') }
     finally { setReminding(null) }
   }
@@ -37,7 +39,12 @@ export function BalancesTab({ data, me, fresh }: { data: GroupData; me: User; fr
   return (
     <div className="space-y-6">
       <section>
-        <SectionTitle>Settle up</SectionTitle>
+        <SectionTitle trailing={plan.length > 0 && (
+          <button type="button" onClick={async () => {
+            const r = await shareText(settleUpMessage(data.group.name, plan.map((t) => ({ from: label(t.from), to: label(t.to), amountPaise: t.amountPaise }))))
+            if (r === 'copied') toast('Copied. Paste it in a chat'); else if (r === 'failed') toast('Could not copy')
+          }} className="glass-btn flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-semibold"><Icon name="share" size={15} />Share</button>
+        )}>Settle up</SectionTitle>
         <Dashed className="space-y-3 p-3">
           {plan.length === 0 ? <p className="p-3.5 text-center text-muted">Everyone is settled up.</p> : plan.map((t) => (
             <Tile key={`${t.from.id}-${t.to.id}`} leading={<AvatarStack users={[t.from, t.to]} size={34} max={2} />}
